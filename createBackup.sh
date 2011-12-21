@@ -89,7 +89,7 @@ for option in $*; do
     --username)
       USER=`echo $option | cut -d'=' -f2`
       ;;
-    --PASSWORD)
+    --password)
       PASS=`echo $option | cut -d'=' -f2`
       ;;
     --database)
