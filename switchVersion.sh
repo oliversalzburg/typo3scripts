@@ -39,6 +39,14 @@ EOF
   exit 0
 }
 
+# Check on minimal command line argument count
+REQUIRED_ARGUMENT_COUNT=1
+if [ $# -lt $REQUIRED_ARGUMENT_COUNT ]; then
+  echo "Insufficient command line arguments!"
+  echo "Use $0 --help to get additional information."
+  exit -1
+fi
+
 # Script Configuration start
 # The base directory where Typo3 is installed
 BASE=typo3

@@ -17,17 +17,35 @@ showHelp() {
   Usage: $0 [OPTIONS]
   
   Core:
-  --help      Display this help and exit.
-  --update    Tries to update the script to the latest version.
-  --base=PATH The name of the base path where Typo3 should be installed.
-              If no base is supplied, "typo3" is used.
+  --help            Display this help and exit.
+  --update          Tries to update the script to the latest version.
+  --base=PATH       The name of the base path where Typo3 should be installed.
+                    If no base is supplied, "typo3" is used.
+              
+  Options:
+  --version=VERSION The version to install.
+              
+  Note: When using an external configuration file, it is sufficient to supply
+        just the target version as a parameter.
+        When supplying any command line argument, supply the target version
+        through the --version command line parameter.
 EOF
   exit 0
 }
 
+# Check on minimal command line argument count
+REQUIRED_ARGUMENT_COUNT=1
+if [ $# -lt $REQUIRED_ARGUMENT_COUNT ]; then
+  echo "Insufficient command line arguments!"
+  echo "Use $0 --help to get additional information."
+  exit -1
+fi
+
 # Script Configuration start
 # The base directory where Typo3 should be installed
 BASE=typo3
+# The version to install
+VERSION=$1
 # Script Configuration end
 
 # The base location from where to retrieve new versions of this script
@@ -62,9 +80,11 @@ for option in $*; do
     --base|-b)
       BASE=`echo $option | cut -d'=' -f2`
       ;;
+    --version)
+      VERSION=`echo $option | cut -d'=' -f2`
+      ;;
     *)
-      echo "Unrecognized option \"$option\""
-      exit 1
+      VERSION=$option
       ;;
   esac
 done
@@ -77,9 +97,6 @@ if [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
 fi
 
 # Begin main operation
-
-# Name command line arguments
-VERSION=$1
 
 # Check for existing installations
 if [ -d "$BASE" ]; then
