@@ -30,7 +30,7 @@ BASE=typo3
 # Script Configuration end
 
 # The base location from where to retrieve new versions of this script
-UPDATE_BASE=http://hartwig-at.de/fileadmin/t3scripts
+UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
 # Self-update
 runSelfUpdate() {
