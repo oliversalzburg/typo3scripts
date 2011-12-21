@@ -158,12 +158,15 @@ mv $VERSION_NAME $BASE
 echo "Done."
 
 # Generate configuration
+echo -n "Generating localconf.php..."
 TYPO3_CONFIG=
 TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_username = '$USER';\n"
 TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_password = '$PASS';\n"
 TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_host     = '$HOST';\n"
 TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db          = '$DB';\n"
-sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/localconf.php > $BASE/typo3conf/localconf.php.scripted
-## INSTALL SCRIPT EDIT POINT TOKEN - all lines after this points may be changed 
+# Write configuration
+cp $BASE/typo3conf/localconf.php $BASE/typo3conf/localconf.php.orig
+sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/localconf.php.orig > $BASE/typo3conf/localconf.php
+echo "Done."
 
 # vim:ts=2:sw=2:expandtab:
