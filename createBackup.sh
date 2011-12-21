@@ -49,7 +49,7 @@ USER=*username*
 # The password for that user
 PASS=*password*
 # The name of the database in which Typo3 is stored
-DB=*database*
+DB=typo3
 # Script Configuration end
 
 # The base location from where to retrieve new versions of this script

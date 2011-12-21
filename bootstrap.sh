@@ -17,13 +17,21 @@ showHelp() {
   Usage: $0 [OPTIONS]
   
   Core:
-  --help            Display this help and exit.
-  --update          Tries to update the script to the latest version.
-  --base=PATH       The name of the base path where Typo3 should be installed.
-                    If no base is supplied, "typo3" is used.
+  --help              Display this help and exit.
+  --update            Tries to update the script to the latest version.
+  --base=PATH         The name of the base path where Typo3 should be
+                      installed. If no base is supplied, "typo3" is used.
               
   Options:
-  --version=VERSION The version to install.
+  --version=VERSION   The version to install.
+  
+  Database:
+  --hostname=HOST     The name of the host where the Typo3 database is running.
+  --username=USER     The username to use when connecting to the Typo3
+                      database.
+  --password=PASSWORD The password to use when connecting to the Typo3
+                      database.
+  --database=DB       The name of the database in which Typo3 is stored.
               
   Note: When using an external configuration file, it is sufficient to supply
         just the target version as a parameter.
@@ -46,6 +54,14 @@ fi
 BASE=typo3
 # The version to install
 VERSION=$1
+# The hostname of the MySQL server that Typo3 uses
+HOST=localhost
+# The username used to connect to that MySQL server
+USER=*username*
+# The password for that user
+PASS=*password*
+# The name of the database in which Typo3 is stored
+DB=typo3
 # Script Configuration end
 
 # The base location from where to retrieve new versions of this script
@@ -82,6 +98,18 @@ for option in $*; do
       ;;
     --version)
       VERSION=`echo $option | cut -d'=' -f2`
+      ;;
+    --hostname)
+      HOST=`echo $option | cut -d'=' -f2`
+      ;;
+    --username)
+      USER=`echo $option | cut -d'=' -f2`
+      ;;
+    --password)
+      PASS=`echo $option | cut -d'=' -f2`
+      ;;
+    --database)
+      DB=`echo $option | cut -d'=' -f2`
       ;;
     *)
       VERSION=$option
@@ -128,5 +156,14 @@ echo -n "Extracting Typo3 package $VERSION_FILENAME..."
 tar --extract --gzip --file $VERSION_FILENAME
 mv $VERSION_NAME $BASE
 echo "Done."
+
+# Generate configuration
+TYPO3_CONFIG=
+TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_username = '$USER';\n"
+TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_password = '$PASS';\n"
+TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_host     = '$HOST';\n"
+TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db          = '$DB';\n"
+sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/localconf.php > $BASE/typo3conf/localconf.php.scripted
+## INSTALL SCRIPT EDIT POINT TOKEN - all lines after this points may be changed 
 
 # vim:ts=2:sw=2:expandtab:
