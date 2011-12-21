@@ -83,7 +83,7 @@ for option in $*; do
     --update)
       runSelfUpdate
       ;;
-    --base|-b)
+    --base=*)
       BASE=`echo $option | cut -d'=' -f2`
       ;;
     --version=*)
