@@ -16,7 +16,7 @@
 set -o nounset
 set -o errexit
 
-SELF=`basename $0`
+SELF=$(basename $0)
 
 # Show the help for this script
 showHelp() {
@@ -82,19 +82,19 @@ for option in $*; do
       runSelfUpdate
       ;;
     --base=*)
-      BASE=`echo $option | cut -d'=' -f2`
+      BASE=$(echo $option | cut -d'=' -f2)
       ;;
     --hostname=*)
-      HOST=`echo $option | cut -d'=' -f2`
+      HOST=$(echo $option | cut -d'=' -f2)
       ;;
     --username=*)
-      USER=`echo $option | cut -d'=' -f2`
+      USER=$(echo $option | cut -d'=' -f2)
       ;;
     --password=*)
-      PASS=`echo $option | cut -d'=' -f2`
+      PASS=$(echo $option | cut -d'=' -f2)
       ;;
     --database=*)
-      DB=`echo $option | cut -d'=' -f2`
+      DB=$(echo $option | cut -d'=' -f2)
       ;;
     *)
       echo "Unrecognized option \"$option\""
@@ -112,7 +112,7 @@ fi
 
 # Begin main operation
 
-FILE=$BASE-`date +%Y-%m-%d-%H-%M`.tgz
+FILE=$BASE-$(date +%Y-%m-%d-%H-%M).tgz
 echo "Creating Typo3 backup '$FILE'..."
 echo -n "Creating database dump at $BASE/database.sql..."
 mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database --databases $DB > $BASE/database.sql

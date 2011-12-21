@@ -16,7 +16,7 @@
 set -o nounset
 set -o errexit
 
-SELF=`basename $0`
+SELF=$(basename $0)
 
 # Show the help for this script
 showHelp() {
@@ -33,8 +33,8 @@ showHelp() {
   
   Note: When using an external configuration file, it is sufficient to supply
         just the target version as a parameter.
-        When supplying any command line argument, supply the target version
-        through the --version command line parameter.
+        When supplying any other command line argument, supply the target
+        version through the --version command line parameter.
 EOF
   exit 0
 }
@@ -84,10 +84,10 @@ for option in $*; do
       runSelfUpdate
       ;;
     --base=*)
-      BASE=`echo $option | cut -d'=' -f2`
+      BASE=$(echo $option | cut -d'=' -f2)
       ;;
     --version=*)
-      VERSION=`echo $option | cut -d'=' -f2`
+      VERSION=$(echo $option | cut -d'=' -f2)
       ;;
     *)
       VERSION=$option

@@ -17,12 +17,12 @@
 set -o nounset
 set -o errexit
 
-SELF=`basename $0`
+SELF=$(basename $0)
 
 # Show the help for this script
 showHelp() {
   cat << EOF
-  Usage: $0 [OPTIONS]
+  Usage: $0 [OPTIONS --file=<FILE>]|<FILE>
   
   Core:
   --help              Display this help and exit.
@@ -39,6 +39,11 @@ showHelp() {
   --password=PASSWORD The password to use when connecting to the Typo3
                       database.
   --database=DB       The name of the database in which Typo3 is stored.
+  
+  Note: When using an external configuration file, it is sufficient to supply
+        just the name of the file that contains the backup as a parameter.
+        When supplying any other command line argument, supply the target file
+        through the --file command line parameter.
 EOF
   exit 0
 }
@@ -96,22 +101,22 @@ for option in $*; do
       runSelfUpdate
       ;;
     --base=*)
-      BASE=`echo $option | cut -d'=' -f2`
+      BASE=$(echo $option | cut -d'=' -f2)
       ;;
     --file=*)
-      FILE=`echo $option | cut -d'=' -f2`
+      FILE=$(echo $option | cut -d'=' -f2)
       ;;
     --hostname=*)
-      HOST=`echo $option | cut -d'=' -f2`
+      HOST=$(echo $option | cut -d'=' -f2)
       ;;
     --username=*)
-      USER=`echo $option | cut -d'=' -f2`
+      USER=$(echo $option | cut -d'=' -f2)
       ;;
     --password=*)
-      PASS=`echo $option | cut -d'=' -f2`
+      PASS=$(echo $option | cut -d'=' -f2)
       ;;
     --database=*)
-      DB=`echo $option | cut -d'=' -f2`
+      DB=$(echo $option | cut -d'=' -f2)
       ;;
     *)
       FILE=$option
