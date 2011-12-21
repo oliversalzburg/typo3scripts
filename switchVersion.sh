@@ -86,7 +86,7 @@ for option in $*; do
     --base|-b)
       BASE=`echo $option | cut -d'=' -f2`
       ;;
-    --version)
+    --version=*)
       VERSION=`echo $option | cut -d'=' -f2`
       ;;
     *)

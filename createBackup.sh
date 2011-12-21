@@ -81,19 +81,19 @@ for option in $*; do
     --update)
       runSelfUpdate
       ;;
-    --base|-b)
+    --base=*)
       BASE=`echo $option | cut -d'=' -f2`
       ;;
-    --hostname)
+    --hostname=*)
       HOST=`echo $option | cut -d'=' -f2`
       ;;
-    --username)
+    --username=*)
       USER=`echo $option | cut -d'=' -f2`
       ;;
-    --password)
+    --password=*)
       PASS=`echo $option | cut -d'=' -f2`
       ;;
-    --database)
+    --database=*)
       DB=`echo $option | cut -d'=' -f2`
       ;;
     *)
