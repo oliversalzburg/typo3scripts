@@ -26,6 +26,7 @@ showHelp() {
   
   Core:
   --help              Display this help and exit.
+  --update            Tries to update the script to the latest version.
   --base=PATH         The name of the base path where Typo3 should be 
                       installed. If no base is supplied, "typo3" is used.
   Database:
