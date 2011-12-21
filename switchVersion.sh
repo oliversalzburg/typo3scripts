@@ -21,12 +21,19 @@ SELF=`basename $0`
 # Show the help for this script
 showHelp() {
   cat << EOF
-  Usage: $0 [OPTIONS]
+  Usage: $0 [OPTIONS --version=<VERSION>]|<VERSION>
   
   Core:
-  --help      Display this help and exit.
-  --base=PATH The name of the base path where Typo3 should be installed.
-              If no base is supplied, "typo3" is used.
+  --help            Display this help and exit.
+  --base=PATH       The name of the base path where Typo3 should be installed.
+                    If no base is supplied, "typo3" is used.
+  Options:
+  --version=VERSION The version to switch to.
+  
+  Note: When using an external configuration file, it is sufficient to supply
+        just the target version as a parameter.
+        When supplying any command line argument, supply the target version
+        through the --version command line parameter.
 EOF
   exit 0
 }
@@ -34,6 +41,8 @@ EOF
 # Script Configuration start
 # The base directory where Typo3 is installed
 BASE=typo3
+# The version to switch to
+VERSION=$1
 # Script Configuration end
 
 # The base location from where to retrieve new versions of this script
@@ -68,9 +77,11 @@ for option in $*; do
     --base|-b)
       BASE=`echo $option | cut -d'=' -f2`
       ;;
+    --version)
+      VERSION=`echo $option | cut -d'=' -f2`
+      ;;
     *)
-      echo "Unrecognized option \"$option\""
-      exit 1
+      VERSION=$option
       ;;
   esac
 done
@@ -83,9 +94,6 @@ if [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
 fi
 
 # Begin main operation
-
-# Name command line arguments
-VERSION=$1
 
 VERSION_FILENAME=typo3_src-$VERSION.tar.gz
 TYPO3_DOWNLOAD_URL=http://prdownloads.sourceforge.net/typo3/$VERSION_FILENAME

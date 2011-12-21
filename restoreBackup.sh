@@ -25,9 +25,16 @@ showHelp() {
   Usage: $0 [OPTIONS]
   
   Core:
-  --help      Display this help and exit.
-  --base=PATH The name of the base path where Typo3 should be installed.
-              If no base is supplied, "typo3" is used.
+  --help              Display this help and exit.
+  --base=PATH         The name of the base path where Typo3 should be 
+                      installed. If no base is supplied, "typo3" is used.
+  Database:
+  --hostname=HOST     The name of the host where the Typo3 database is running.
+  --username=USER     The username to use when connecting to the Typo3
+                      database.
+  --password=PASSWORD The password to use when connecting to the Typo3
+                      database.
+  --database=DB       The name of the database in which Typo3 is stored.
 EOF
   exit 0
 }
@@ -76,6 +83,18 @@ for option in $*; do
       ;;
     --base|-b)
       BASE=`echo $option | cut -d'=' -f2`
+      ;;
+    --hostname)
+      HOST=`echo $option | cut -d'=' -f2`
+      ;;
+    --username)
+      USER=`echo $option | cut -d'=' -f2`
+      ;;
+    --password)
+      PASS=`echo $option | cut -d'=' -f2`
+      ;;
+    --database)
+      DB=`echo $option | cut -d'=' -f2`
       ;;
     *)
       echo "Unrecognized option \"$option\""
