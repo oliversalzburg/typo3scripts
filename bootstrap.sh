@@ -64,6 +64,11 @@ PASS=*password*
 DB=typo3
 # Script Configuration end
 
+# Pre-initialize password to random 16-character string if possible
+if [ -e /dev/urandom ]; then
+  PASS=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
+fi
+
 # The base location from where to retrieve new versions of this script
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
