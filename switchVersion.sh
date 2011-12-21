@@ -16,7 +16,7 @@
 set -o nounset
 set -o errexit
 
-SELF=`basename $0`
+SELF=$(basename $0)
 
 # Show the help for this script
 showHelp() {
@@ -25,6 +25,7 @@ showHelp() {
   
   Core:
   --help            Display this help and exit.
+  --update          Tries to update the script to the latest version.
   --base=PATH       The name of the base path where Typo3 should be installed.
                     If no base is supplied, "typo3" is used.
   Options:
@@ -32,11 +33,19 @@ showHelp() {
   
   Note: When using an external configuration file, it is sufficient to supply
         just the target version as a parameter.
-        When supplying any command line argument, supply the target version
-        through the --version command line parameter.
+        When supplying any other command line argument, supply the target
+        version through the --version command line parameter.
 EOF
   exit 0
 }
+
+# Check on minimal command line argument count
+REQUIRED_ARGUMENT_COUNT=1
+if [ $# -lt $REQUIRED_ARGUMENT_COUNT ]; then
+  echo "Insufficient command line arguments!"
+  echo "Use $0 --help to get additional information."
+  exit -1
+fi
 
 # Script Configuration start
 # The base directory where Typo3 is installed
@@ -74,11 +83,11 @@ for option in $*; do
     --update)
       runSelfUpdate
       ;;
-    --base|-b)
-      BASE=`echo $option | cut -d'=' -f2`
+    --base=*)
+      BASE=$(echo $option | cut -d'=' -f2)
       ;;
-    --version)
-      VERSION=`echo $option | cut -d'=' -f2`
+    --version=*)
+      VERSION=$(echo $option | cut -d'=' -f2)
       ;;
     *)
       VERSION=$option

@@ -17,17 +17,21 @@
 set -o nounset
 set -o errexit
 
-SELF=`basename $0`
+SELF=$(basename $0)
 
 # Show the help for this script
 showHelp() {
   cat << EOF
-  Usage: $0 [OPTIONS]
+  Usage: $0 [OPTIONS --file=<FILE>]|<FILE>
   
   Core:
   --help              Display this help and exit.
+  --update            Tries to update the script to the latest version.
   --base=PATH         The name of the base path where Typo3 should be 
                       installed. If no base is supplied, "typo3" is used.
+  Options:
+  --file=FILE         The file in which the backup is stored.
+  
   Database:
   --hostname=HOST     The name of the host where the Typo3 database is running.
   --username=USER     The username to use when connecting to the Typo3
@@ -35,13 +39,28 @@ showHelp() {
   --password=PASSWORD The password to use when connecting to the Typo3
                       database.
   --database=DB       The name of the database in which Typo3 is stored.
+  
+  Note: When using an external configuration file, it is sufficient to supply
+        just the name of the file that contains the backup as a parameter.
+        When supplying any other command line argument, supply the target file
+        through the --file command line parameter.
 EOF
   exit 0
 }
+
+# Check on minimal command line argument count
+REQUIRED_ARGUMENT_COUNT=1
+if [ $# -lt $REQUIRED_ARGUMENT_COUNT ]; then
+  echo "Insufficient command line arguments!"
+  echo "Use $0 --help to get additional information."
+  exit -1
+fi
  
 # Script Configuration start
 # The base directory where Typo3 is installed
 BASE=typo3
+# The file to restore the backup from
+FILE=$1
 # The hostname of the MySQL server that Typo3 uses
 HOST=localhost
 # The username used to connecto to that MySQL server
@@ -81,24 +100,26 @@ for option in $*; do
     --update)
       runSelfUpdate
       ;;
-    --base|-b)
-      BASE=`echo $option | cut -d'=' -f2`
+    --base=*)
+      BASE=$(echo $option | cut -d'=' -f2)
       ;;
-    --hostname)
-      HOST=`echo $option | cut -d'=' -f2`
+    --file=*)
+      FILE=$(echo $option | cut -d'=' -f2)
       ;;
-    --username)
-      USER=`echo $option | cut -d'=' -f2`
+    --hostname=*)
+      HOST=$(echo $option | cut -d'=' -f2)
       ;;
-    --password)
-      PASS=`echo $option | cut -d'=' -f2`
+    --username=*)
+      USER=$(echo $option | cut -d'=' -f2)
       ;;
-    --database)
-      DB=`echo $option | cut -d'=' -f2`
+    --password=*)
+      PASS=$(echo $option | cut -d'=' -f2)
+      ;;
+    --database=*)
+      DB=$(echo $option | cut -d'=' -f2)
       ;;
     *)
-      echo "Unrecognized option \"$option\""
-      exit 1
+      FILE=$option
       ;;
   esac
 done
@@ -111,9 +132,6 @@ if [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
 fi
 
 # Begin main operation
-
-# Name command line arguments
-FILE=$1
 
 echo -n "Erasing current Typo3 installation '$BASE'..."
 rm --recursive --force $BASE > /dev/null

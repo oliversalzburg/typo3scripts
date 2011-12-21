@@ -16,7 +16,7 @@
 set -o nounset
 set -o errexit
 
-SELF=`basename $0`
+SELF=$(basename $0)
 
 # Show the help for this script
 showHelp() {
@@ -25,6 +25,7 @@ showHelp() {
   
   Core:
   --help              Display this help and exit.
+  --update            Tries to update the script to the latest version.
   --base=PATH         The name of the base path where Typo3 should be 
                       installed. If no base is supplied, "typo3" is used.
   Database:
@@ -48,7 +49,7 @@ USER=*username*
 # The password for that user
 PASS=*password*
 # The name of the database in which Typo3 is stored
-DB=*database*
+DB=typo3
 # Script Configuration end
 
 # The base location from where to retrieve new versions of this script
@@ -80,20 +81,20 @@ for option in $*; do
     --update)
       runSelfUpdate
       ;;
-    --base|-b)
-      BASE=`echo $option | cut -d'=' -f2`
+    --base=*)
+      BASE=$(echo $option | cut -d'=' -f2)
       ;;
-    --hostname)
-      HOST=`echo $option | cut -d'=' -f2`
+    --hostname=*)
+      HOST=$(echo $option | cut -d'=' -f2)
       ;;
-    --username)
-      USER=`echo $option | cut -d'=' -f2`
+    --username=*)
+      USER=$(echo $option | cut -d'=' -f2)
       ;;
-    --password)
-      PASS=`echo $option | cut -d'=' -f2`
+    --password=*)
+      PASS=$(echo $option | cut -d'=' -f2)
       ;;
-    --database)
-      DB=`echo $option | cut -d'=' -f2`
+    --database=*)
+      DB=$(echo $option | cut -d'=' -f2)
       ;;
     *)
       echo "Unrecognized option \"$option\""
@@ -111,7 +112,7 @@ fi
 
 # Begin main operation
 
-FILE=$BASE-`date +%Y-%m-%d-%H-%M`.tgz
+FILE=$BASE-$(date +%Y-%m-%d-%H-%M).tgz
 echo "Creating Typo3 backup '$FILE'..."
 echo -n "Creating database dump at $BASE/database.sql..."
 mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database --databases $DB > $BASE/database.sql

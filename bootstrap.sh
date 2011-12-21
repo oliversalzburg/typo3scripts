@@ -9,25 +9,65 @@
 set -o nounset
 set -o errexit
 
-SELF=`basename $0`
+SELF=$(basename $0)
 
 # Show the help for this script
 showHelp() {
   cat << EOF
-  Usage: $0 [OPTIONS]
+  Usage: $0 [OPTIONS --version=<VERSION>]|<VERSION>
   
   Core:
-  --help      Display this help and exit.
-  --base=PATH The name of the base path where Typo3 should be installed.
-              If no base is supplied, "typo3" is used.
+  --help              Display this help and exit.
+  --update            Tries to update the script to the latest version.
+  --base=PATH         The name of the base path where Typo3 should be
+                      installed. If no base is supplied, "typo3" is used.
+              
+  Options:
+  --version=VERSION   The version to install.
+  
+  Database:
+  --hostname=HOST     The name of the host where the Typo3 database is running.
+  --username=USER     The username to use when connecting to the Typo3
+                      database.
+  --password=PASSWORD The password to use when connecting to the Typo3
+                      database.
+  --database=DB       The name of the database in which Typo3 is stored.
+              
+  Note: When using an external configuration file, it is sufficient to supply
+        just the target version as a parameter.
+        When supplying other any command line argument, supply the target
+        version through the --version command line parameter.
 EOF
   exit 0
 }
 
+# Check on minimal command line argument count
+REQUIRED_ARGUMENT_COUNT=1
+if [ $# -lt $REQUIRED_ARGUMENT_COUNT ]; then
+  echo "Insufficient command line arguments!"
+  echo "Use $0 --help to get additional information."
+  exit -1
+fi
+
 # Script Configuration start
 # The base directory where Typo3 should be installed
 BASE=typo3
+# The version to install
+VERSION=$1
+# The hostname of the MySQL server that Typo3 uses
+HOST=localhost
+# The username used to connect to that MySQL server
+USER=*username*
+# The password for that user
+PASS=*password*
+# The name of the database in which Typo3 is stored
+DB=typo3
 # Script Configuration end
+
+# Pre-initialize password to random 16-character string if possible
+if [ -e /dev/urandom ]; then
+  PASS=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
+fi
 
 # The base location from where to retrieve new versions of this script
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
@@ -58,12 +98,26 @@ for option in $*; do
     --update)
       runSelfUpdate
       ;;
-    --base|-b)
-      BASE=`echo $option | cut -d'=' -f2`
+    --base=*)
+      BASE=$(echo $option | cut -d'=' -f2)
+      ;;
+    --version=*)
+      VERSION=$(echo $option | cut -d'=' -f2)
+      ;;
+    --hostname=*)
+      HOST=$(echo $option | cut -d'=' -f2)
+      ;;
+    --username=*)
+      USER=$(echo $option | cut -d'=' -f2)
+      ;;
+    --password=*)
+      PASS=$(echo $option | cut -d'=' -f2)
+      ;;
+    --database=*)
+      DB=$(echo $option | cut -d'=' -f2)
       ;;
     *)
-      echo "Unrecognized option \"$option\""
-      exit 1
+      VERSION=$option
       ;;
   esac
 done
@@ -76,9 +130,6 @@ if [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
 fi
 
 # Begin main operation
-
-# Name command line arguments
-VERSION=$1
 
 # Check for existing installations
 if [ -d "$BASE" ]; then
@@ -109,6 +160,18 @@ echo "Done."
 echo -n "Extracting Typo3 package $VERSION_FILENAME..."
 tar --extract --gzip --file $VERSION_FILENAME
 mv $VERSION_NAME $BASE
+echo "Done."
+
+# Generate configuration
+echo -n "Generating localconf.php..."
+TYPO3_CONFIG=
+TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_username = '$USER';\n"
+TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_password = '$PASS';\n"
+TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_host     = '$HOST';\n"
+TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db          = '$DB';\n"
+# Write configuration
+cp $BASE/typo3conf/localconf.php $BASE/typo3conf/localconf.php.orig
+sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/localconf.php.orig > $BASE/typo3conf/localconf.php
 echo "Done."
 
 # vim:ts=2:sw=2:expandtab:
