@@ -77,7 +77,6 @@ runSelfUpdate() {
   echo -n "Performing self-update..."
   
   # Download new version
-  set +o errexit
   if ! wget --quiet --output-document="$0.tmp" $UPDATE_BASE/$SELF ; then
     echo "Failed: Error while trying to wget new version!"
     echo "File requested: $UPDATE_BASE/$SELF"
@@ -90,7 +89,6 @@ runSelfUpdate() {
     echo "Failed: Error while trying to set mode on $0.tmp."
     exit 1
   fi
-  set -o errexit
   
   # Overwrite old file with new
   mv "$0.tmp" "$0"
