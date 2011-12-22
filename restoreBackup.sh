@@ -76,10 +76,28 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
 # Self-update
 runSelfUpdate() {
-  echo "Performing self-update..."
-  wget --quiet --output-document=$0.tmp $UPDATE_BASE/$SELF
-  chmod u+x $0.tmp
-  mv $0.tmp $0
+  echo -n "Performing self-update..."
+  
+  # Download new version
+  set +o errexit
+  if ! wget --quiet --output-document="$0.tmp" $UPDATE_BASE/$SELF ; then
+    echo "Failed: Error while trying to wget new version!"
+    echo "File requested: $UPDATE_BASE/$SELF"
+    exit 1
+  fi
+  
+  # Copy over modes from old version
+  OCTAL_MODE=$(stat -c '%a' $SELF)
+  if ! chmod $OCTAL_MODE "$0.tmp" ; then
+    echo "Failed: Error while trying to set mode on $0.tmp."
+    exit 1
+  fi
+  set -o errexit
+  
+  # Overwrite old file with new
+  mv "$0.tmp" "$0"
+  
+  echo "Done"
   exit 0
 }
 
