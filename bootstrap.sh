@@ -4,6 +4,9 @@
 # written by Oliver Salzburg
 #
 # Changelog:
+# 1.1.0 - Code cleaned up
+#         Extended command line paramter support
+#         Improved self-updating
 # 1.0.0 - Initial release
 
 set -o nounset

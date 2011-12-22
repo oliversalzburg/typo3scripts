@@ -4,6 +4,9 @@
 # written by Oliver Salzburg
 #
 # Changelog:
+# 1.5.0 - Code cleaned up
+#         Extended command line paramter support
+#         Improved self-updating
 # 1.4.2 - Fixed update location
 # 1.4.1 - Now using generic config file sourcing approach
 # 1.4.0 - Added update check functionality

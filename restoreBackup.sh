@@ -4,6 +4,9 @@
 # written by Oliver Salzburg
 #
 # Changelog:
+# 1.4.0 - Code cleaned up
+#         Extended command line paramter support
+#         Improved self-updating
 # 1.3.4 - Fixed update location
 # 1.3.3 - Now using generic config file sourcing approach
 # 1.3.2 - Now using explicit modifiers
