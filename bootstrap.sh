@@ -43,7 +43,7 @@ EOF
 
 # Check on minimal command line argument count
 REQUIRED_ARGUMENT_COUNT=1
-if [ $# -lt $REQUIRED_ARGUMENT_COUNT ]; then
+if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
   echo "Insufficient command line arguments!"
   echo "Use $0 --help to get additional information."
   exit -1
@@ -65,7 +65,7 @@ DB=typo3
 # Script Configuration end
 
 # Pre-initialize password to random 16-character string if possible
-if [ -e /dev/urandom ]; then
+if [[ -e /dev/urandom ]]; then
   PASS=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
 fi
 
@@ -83,7 +83,7 @@ runSelfUpdate() {
 
 # Read external configuration (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [ -e "$CONFIG_FILENAME" ]; then
+if [[ -e "$CONFIG_FILENAME" ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."
@@ -132,7 +132,7 @@ fi
 # Begin main operation
 
 # Check for existing installations
-if [ -d "$BASE" ]; then
+if [[ -d "$BASE" ]]; then
   echo "A directory named $BASE already exists. $SELF will not overwrite existing content."
   echo "Please remove the folder $BASE manually and run this script again."
   exit 1
@@ -146,7 +146,7 @@ VERSION_FILENAME=$VERSION_NAME.tar.gz
 TYPO3_DOWNLOAD_URL=http://prdownloads.sourceforge.net/typo3/$VERSION_FILENAME
 
 echo -n "Looking for Typo3 package at $VERSION_FILENAME..."
-if [ ! -e "$VERSION_FILENAME" ]; then
+if [[ ! -e "$VERSION_FILENAME" ]]; then
   echo "NOT found!"
   echo -n "Downloading $TYPO3_DOWNLOAD_URL..."
   wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILENAME

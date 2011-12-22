@@ -50,7 +50,7 @@ EOF
 
 # Check on minimal command line argument count
 REQUIRED_ARGUMENT_COUNT=1
-if [ $# -lt $REQUIRED_ARGUMENT_COUNT ]; then
+if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
   echo "Insufficient command line arguments!"
   echo "Use $0 --help to get additional information."
   exit -1
@@ -85,7 +85,7 @@ runSelfUpdate() {
 
 # Read external configuration
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [ -e "$CONFIG_FILENAME" ]; then
+if [[ -e "$CONFIG_FILENAME" ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."

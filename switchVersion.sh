@@ -41,7 +41,7 @@ EOF
 
 # Check on minimal command line argument count
 REQUIRED_ARGUMENT_COUNT=1
-if [ $# -lt $REQUIRED_ARGUMENT_COUNT ]; then
+if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
   echo "Insufficient command line arguments!"
   echo "Use $0 --help to get additional information."
   exit -1
@@ -59,43 +59,33 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
 # Self-update
 runSelfUpdate() {
-  echo "Performing self-update..."
+  echo -n "Performing self-update..."
   
   # Download new version
   set +o errexit
   if ! wget --quiet --output-document=$0.tmp $UPDATE_BASE/$SELF ; then
-    echo "Error while trying to wget new version!"
+    echo "Failed: Error while trying to wget new version!"
     exit 1
   fi
   
   # Copy over modes from old version
   OCTAL_MODE=$(stat -c '%a' $SELF)
-#  case ${OCTAL_MODE:--1} in
-#    -[1])
-#      echo "Error: Octal mode for $0 is empty."
-#      exit 1
-#      ;;
-#    777|775|755) : nothing ;;
-#    *)
-#      echo "Error: Octal mode for $0 not sufficient: ${OCTAL_MODE}"
-#      exit 1
-#    ;;
-#  esac
-  
   if ! chmod $OCTAL_MODE $0.tmp ; then
-    echo "Error while trying to set mode on $0.tmp."
+    echo "Failed: Error while trying to set mode on $0.tmp."
     exit 1
   fi
   set -o errexit
   
   # Overwrite old file with new
   mv $0.tmp $0
+  
+  echo "Done"
   exit 0
 }
 
 # Read external configuration
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [ -e "$CONFIG_FILENAME" ]; then
+if [[ -e "$CONFIG_FILENAME" ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."
@@ -139,11 +129,11 @@ VERSION_DIR=$BASE/$VERSION_DIRNAME/
 SYMLINK=$BASE/typo3_src
 
 echo -n "Looking for Typo3 source package at $VERSION_DIR..."
-if [ -d "$VERSION_DIR" ]; then
+if [[ -d "$VERSION_DIR" ]]; then
   echo "Found!"
 else
   # Retrieve Typo3 source package
-  if [ -e "$VERSION_FILE" ]; then
+  if [[ -e "$VERSION_FILE" ]]; then
     echo "NOT found!"
     echo "Archive already exists. Trying to resume download."
     echo -n "Downloading $TYPO3_DOWNLOAD_URL..."
