@@ -20,7 +20,7 @@
 set -o nounset
 set -o errexit
 
-SELF=$(basename $0)
+SELF=$(basename "$0")
 
 # Show the help for this script
 showHelp() {
@@ -156,7 +156,7 @@ done
 
 # Update check
 SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $1}')
-SUM_SELF=$(md5sum $0 | awk '{print $1}')
+SUM_SELF=$(md5sum "$0" | awk '{print $1}')
 if [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
   echo "NOTE: New version available!"
 fi

@@ -127,7 +127,7 @@ done
 
 # Update check
 SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $1}')
-SUM_SELF=$(md5sum $0 | awk '{print $1}')
+SUM_SELF=$(md5sum "$0" | awk '{print $1}')
 if [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
   echo "NOTE: New version available!"
 fi
