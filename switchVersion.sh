@@ -60,8 +60,35 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 # Self-update
 runSelfUpdate() {
   echo "Performing self-update..."
-  wget --quiet --output-document=$0.tmp $UPDATE_BASE/$SELF
-  chmod u+x $0.tmp
+  
+  # Download new version
+  set +o errexit
+  if ! wget --quiet --output-document=$0.tmp $UPDATE_BASE/$SELF ; then
+    echo "Error while trying to wget new version!"
+    exit 1
+  fi
+  
+  # Copy over modes from old version
+  OCTAL_MODE=$(stat -c '%a' $SELF)
+#  case ${OCTAL_MODE:--1} in
+#    -[1])
+#      echo "Error: Octal mode for $0 is empty."
+#      exit 1
+#      ;;
+#    777|775|755) : nothing ;;
+#    *)
+#      echo "Error: Octal mode for $0 not sufficient: ${OCTAL_MODE}"
+#      exit 1
+#    ;;
+#  esac
+  
+  if ! chmod $OCTAL_MODE $0.tmp ; then
+    echo "Error while trying to set mode on $0.tmp."
+    exit 1
+  fi
+  set -o errexit
+  
+  # Overwrite old file with new
   mv $0.tmp $0
   exit 0
 }
