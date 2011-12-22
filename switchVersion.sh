@@ -16,7 +16,7 @@
 set -o nounset
 set -o errexit
 
-SELF=$(basename $0)
+SELF=$(basename "$0")
 
 # Show the help for this script
 showHelp() {
@@ -63,21 +63,21 @@ runSelfUpdate() {
   
   # Download new version
   set +o errexit
-  if ! wget --quiet --output-document=$0.tmp $UPDATE_BASE/$SELF ; then
+  if ! wget --quiet --output-document="$0.tmp" $UPDATE_BASE/$SELF ; then
     echo "Failed: Error while trying to wget new version!"
     exit 1
   fi
   
   # Copy over modes from old version
   OCTAL_MODE=$(stat -c '%a' $SELF)
-  if ! chmod $OCTAL_MODE $0.tmp ; then
+  if ! chmod $OCTAL_MODE "$0.tmp" ; then
     echo "Failed: Error while trying to set mode on $0.tmp."
     exit 1
   fi
   set -o errexit
   
   # Overwrite old file with new
-  mv $0.tmp $0
+  mv "$0.tmp" "$0"
   
   echo "Done"
   exit 0
