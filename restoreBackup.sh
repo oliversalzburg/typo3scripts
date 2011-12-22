@@ -4,6 +4,9 @@
 # written by Oliver Salzburg
 #
 # Changelog:
+# 1.4.0 - Code cleaned up
+#         Extended command line paramter support
+#         Improved self-updating
 # 1.3.4 - Fixed update location
 # 1.3.3 - Now using generic config file sourcing approach
 # 1.3.2 - Now using explicit modifiers
@@ -50,7 +53,7 @@ EOF
 
 # Check on minimal command line argument count
 REQUIRED_ARGUMENT_COUNT=1
-if [ $# -lt $REQUIRED_ARGUMENT_COUNT ]; then
+if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
   echo "Insufficient command line arguments!"
   echo "Use $0 --help to get additional information."
   exit -1
@@ -77,15 +80,42 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 # Self-update
 runSelfUpdate() {
   echo "Performing self-update..."
-  wget --quiet --output-document=$0.tmp $UPDATE_BASE/$SELF
-  chmod u+x $0.tmp
-  mv $0.tmp $0
-  exit 0
+  
+  # Download new version
+  echo -n "Downloading latest version..."
+  if ! wget --quiet --output-document="$0.tmp" $UPDATE_BASE/$SELF ; then
+    echo "Failed: Error while trying to wget new version!"
+    echo "File requested: $UPDATE_BASE/$SELF"
+    exit 1
+  fi
+  echo "Done."
+  
+  # Copy over modes from old version
+  OCTAL_MODE=$(stat -c '%a' $SELF)
+  if ! chmod $OCTAL_MODE "$0.tmp" ; then
+    echo "Failed: Error while trying to set mode on $0.tmp."
+    exit 1
+  fi
+  
+  # Spawn update script
+  cat > updateScript.sh << EOF
+#!/bin/bash
+# Overwrite old file with new
+if mv "$0.tmp" "$0"; then
+  echo "Done. Update complete."
+  rm \$0
+else
+  echo "Failed!"
+fi
+EOF
+  
+  echo -n "Inserting update process..."
+  exec /bin/bash updateScript.sh
 }
 
 # Read external configuration
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [ -e "$CONFIG_FILENAME" ]; then
+if [[ -e "$CONFIG_FILENAME" ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."
@@ -133,18 +163,40 @@ fi
 
 # Begin main operation
 
+# Does the base directory exist?
+if [ ! -d $BASE ]; then
+  echo "The base directory '$BASE' does not seem to exist!"
+  exit 1
+fi
+# Is the base directory writeable?
+if [ ! -w $BASE ]; then
+  echo "The base directory '$BASE' is not writeable!"
+  exit 1
+fi
+
 echo -n "Erasing current Typo3 installation '$BASE'..."
-rm --recursive --force $BASE > /dev/null
+if ! rm --recursive --force $BASE > /dev/null; then
+  echo "Failed!"
+  exit 1
+fi
 echo "Done."
+
 echo -n "Extracting Typo3 backup '$FILE'..."
-tar --extract --gzip --file $FILE > /dev/null
+if ! tar --extract --gzip --file $FILE > /dev/null; then
+  echo "Failed!"
+  exit 1
+fi
 echo "Done."
+
 echo -n "Importing database dump..."
-mysql --host=$HOST --user=$USER --password=$PASS --default-character-set=utf8 $DB < $BASE/database.sql
+if ! mysql --host=$HOST --user=$USER --password=$PASS --default-character-set=utf8 $DB < $BASE/database.sql; then
+  echo "Failed!"
+  exit 1
+fi
 echo "Done."
+
 echo -n "Deleting database dump..."
-rm $BASE/database.sql
-echo "Done."
+rm --force $BASE/database.sql
 echo "Done!"
 
 # vim:ts=2:sw=2:expandtab:

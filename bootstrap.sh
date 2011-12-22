@@ -4,6 +4,9 @@
 # written by Oliver Salzburg
 #
 # Changelog:
+# 1.1.0 - Code cleaned up
+#         Extended command line paramter support
+#         Improved self-updating
 # 1.0.0 - Initial release
 
 set -o nounset
@@ -43,7 +46,7 @@ EOF
 
 # Check on minimal command line argument count
 REQUIRED_ARGUMENT_COUNT=1
-if [ $# -lt $REQUIRED_ARGUMENT_COUNT ]; then
+if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
   echo "Insufficient command line arguments!"
   echo "Use $0 --help to get additional information."
   exit -1
@@ -65,7 +68,7 @@ DB=typo3
 # Script Configuration end
 
 # Pre-initialize password to random 16-character string if possible
-if [ -e /dev/urandom ]; then
+if [[ -e /dev/urandom ]]; then
   PASS=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
 fi
 
@@ -75,15 +78,42 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 # Self-update
 runSelfUpdate() {
   echo "Performing self-update..."
-  wget --quiet --output-document=$0.tmp $UPDATE_BASE/$SELF
-  chmod u+x $0.tmp
-  mv $0.tmp $0
-  exit 0
+  
+  # Download new version
+  echo -n "Downloading latest version..."
+  if ! wget --quiet --output-document="$0.tmp" $UPDATE_BASE/$SELF ; then
+    echo "Failed: Error while trying to wget new version!"
+    echo "File requested: $UPDATE_BASE/$SELF"
+    exit 1
+  fi
+  echo "Done."
+  
+  # Copy over modes from old version
+  OCTAL_MODE=$(stat -c '%a' $SELF)
+  if ! chmod $OCTAL_MODE "$0.tmp" ; then
+    echo "Failed: Error while trying to set mode on $0.tmp."
+    exit 1
+  fi
+  
+  # Spawn update script
+  cat > updateScript.sh << EOF
+#!/bin/bash
+# Overwrite old file with new
+if mv "$0.tmp" "$0"; then
+  echo "Done. Update complete."
+  rm \$0
+else
+  echo "Failed!"
+fi
+EOF
+  
+  echo -n "Inserting update process..."
+  exec /bin/bash updateScript.sh
 }
 
 # Read external configuration (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [ -e "$CONFIG_FILENAME" ]; then
+if [[ -e "$CONFIG_FILENAME" ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."
@@ -132,7 +162,7 @@ fi
 # Begin main operation
 
 # Check for existing installations
-if [ -d "$BASE" ]; then
+if [[ -d "$BASE" ]]; then
   echo "A directory named $BASE already exists. $SELF will not overwrite existing content."
   echo "Please remove the folder $BASE manually and run this script again."
   exit 1
@@ -146,7 +176,7 @@ VERSION_FILENAME=$VERSION_NAME.tar.gz
 TYPO3_DOWNLOAD_URL=http://prdownloads.sourceforge.net/typo3/$VERSION_FILENAME
 
 echo -n "Looking for Typo3 package at $VERSION_FILENAME..."
-if [ ! -e "$VERSION_FILENAME" ]; then
+if [[ ! -e "$VERSION_FILENAME" ]]; then
   echo "NOT found!"
   echo -n "Downloading $TYPO3_DOWNLOAD_URL..."
   wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILENAME
@@ -158,8 +188,17 @@ fi
 echo "Done."
 
 echo -n "Extracting Typo3 package $VERSION_FILENAME..."
-tar --extract --gzip --file $VERSION_FILENAME
-mv $VERSION_NAME $BASE
+if ! tar --extract --gzip --file $VERSION_FILENAME; then
+  echo "Failed!"
+  exit 1
+fi
+echo "Done."
+
+echo -n "Moving Typo3 package to $BASE..."
+if ! mv $VERSION_NAME $BASE; then
+  echo "Failed!"
+  exit 1
+fi
 echo "Done."
 
 # Generate configuration
@@ -170,8 +209,15 @@ TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_password = '$PASS';\n"
 TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_host     = '$HOST';\n"
 TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db          = '$DB';\n"
 # Write configuration
-cp $BASE/typo3conf/localconf.php $BASE/typo3conf/localconf.php.orig
-sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/localconf.php.orig > $BASE/typo3conf/localconf.php
+if ! cp $BASE/typo3conf/localconf.php $BASE/typo3conf/localconf.php.orig; then
+  echo "Failed! Unable to create copy of localconf.php"
+  exit 1
+fi
+
+if ! sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/localconf.php.orig > $BASE/typo3conf/localconf.php; then
+  echo "Failed! Unable to modify localconf.php"
+  exit 1
+fi
 echo "Done."
 
 # vim:ts=2:sw=2:expandtab:

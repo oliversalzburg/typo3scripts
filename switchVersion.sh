@@ -4,6 +4,9 @@
 # written by Oliver Salzburg
 #
 # Changelog:
+# 1.5.0 - Code cleaned up
+#         Extended command line paramter support
+#         Improved self-updating
 # 1.4.2 - Fixed update location
 # 1.4.1 - Now using generic config file sourcing approach
 # 1.4.0 - Added update check functionality
@@ -16,7 +19,7 @@
 set -o nounset
 set -o errexit
 
-SELF=$(basename $0)
+SELF=$(basename "$0")
 
 # Show the help for this script
 showHelp() {
@@ -41,7 +44,7 @@ EOF
 
 # Check on minimal command line argument count
 REQUIRED_ARGUMENT_COUNT=1
-if [ $# -lt $REQUIRED_ARGUMENT_COUNT ]; then
+if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
   echo "Insufficient command line arguments!"
   echo "Use $0 --help to get additional information."
   exit -1
@@ -60,15 +63,42 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 # Self-update
 runSelfUpdate() {
   echo "Performing self-update..."
-  wget --quiet --output-document=$0.tmp $UPDATE_BASE/$SELF
-  chmod u+x $0.tmp
-  mv $0.tmp $0
-  exit 0
+  
+  # Download new version
+  echo -n "Downloading latest version..."
+  if ! wget --quiet --output-document="$0.tmp" $UPDATE_BASE/$SELF ; then
+    echo "Failed: Error while trying to wget new version!"
+    echo "File requested: $UPDATE_BASE/$SELF"
+    exit 1
+  fi
+  echo "Done."
+  
+  # Copy over modes from old version
+  OCTAL_MODE=$(stat -c '%a' $SELF)
+  if ! chmod $OCTAL_MODE "$0.tmp" ; then
+    echo "Failed: Error while trying to set mode on $0.tmp."
+    exit 1
+  fi
+  
+  # Spawn update script
+  cat > updateScript.sh << EOF
+#!/bin/bash
+# Overwrite old file with new
+if mv "$0.tmp" "$0"; then
+  echo "Done. Update complete."
+  rm \$0
+else
+  echo "Failed!"
+fi
+EOF
+  
+  echo -n "Inserting update process..."
+  exec /bin/bash updateScript.sh
 }
 
 # Read external configuration
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [ -e "$CONFIG_FILENAME" ]; then
+if [[ -e "$CONFIG_FILENAME" ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."
@@ -112,36 +142,54 @@ VERSION_DIR=$BASE/$VERSION_DIRNAME/
 SYMLINK=$BASE/typo3_src
 
 echo -n "Looking for Typo3 source package at $VERSION_DIR..."
-if [ -d "$VERSION_DIR" ]; then
+if [[ -d "$VERSION_DIR" ]]; then
   echo "Found!"
 else
   # Retrieve Typo3 source package
-  if [ -e "$VERSION_FILE" ]; then
+  if [[ -e "$VERSION_FILE" ]]; then
     echo "NOT found!"
     echo "Archive already exists. Trying to resume download."
     echo -n "Downloading $TYPO3_DOWNLOAD_URL..."
-    wget --quiet --continue $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE
+    if ! wget --quiet --continue $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE; then
+      echo "Failed!"
+      exit 1
+    fi
   else
     echo "NOT found! Downloading."
     echo -n "Downloading $TYPO3_DOWNLOAD_URL..."
-    wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE
+    if ! wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE; then
+      echo "Failed!"
+      exit 1
+    fi
   fi
   echo "Done."
 
   echo -n "Extracting source package $VERSION_FILE..."
-  tar --extract --gzip --directory $BASE --file $VERSION_FILE
+  if ! tar --extract --gzip --directory $BASE --file $VERSION_FILE; then
+    echo "Failed!"
+    exit 1
+  fi
   echo "Done."
 fi
 
 # Switch symlink
 echo -n "Switching Typo3 source symlink to $VERSION_DIR..."
-rm --force $SYMLINK
-ln --symbolic $VERSION_DIRNAME $SYMLINK
+if ! rm --force $SYMLINK; then
+  echo "Failed! Unable to remove old symlink '$SYMLINK'"
+  exit 1
+fi
+if ! ln --symbolic $VERSION_DIRNAME $SYMLINK; then
+  echo "Failed! Unable to create new symlink '$SYMLINK'"
+  exit 1
+fi
 echo "Done."
 
 # Delete old, cached files
 echo -n "Deleting temp_CACHED_* files from typo3conf..."
-rm --force $BASE/typo3conf/temp_CACHED_*
+if ! rm --force $BASE/typo3conf/temp_CACHED_*; then
+  echo "Failed!"
+  # No need to exit. Failing to delete cache files is not critical to operation
+fi
 
 echo "Done!"
 echo "Version switched to $VERSION."
