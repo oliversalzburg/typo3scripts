@@ -76,14 +76,16 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
 # Self-update
 runSelfUpdate() {
-  echo -n "Performing self-update..."
+  echo "Performing self-update..."
   
   # Download new version
+  echo -n "Downloading latest version..."
   if ! wget --quiet --output-document="$0.tmp" $UPDATE_BASE/$SELF ; then
     echo "Failed: Error while trying to wget new version!"
     echo "File requested: $UPDATE_BASE/$SELF"
     exit 1
   fi
+  echo "Done."
   
   # Copy over modes from old version
   OCTAL_MODE=$(stat -c '%a' $SELF)
@@ -92,11 +94,20 @@ runSelfUpdate() {
     exit 1
   fi
   
-  # Overwrite old file with new
-  mv "$0.tmp" "$0"
+  # Spawn update script
+  cat > updateScript.sh << EOF
+#!/bin/bash
+# Overwrite old file with new
+if mv "$0.tmp" "$0"; then
+  echo "Done. Update complete."
+  rm \$0
+else
+  echo "Failed!"
+fi
+EOF
   
-  echo "Done"
-  exit 0
+  echo -n "Inserting update process..."
+  exec /bin/bash updateScript.sh
 }
 
 # Read external configuration

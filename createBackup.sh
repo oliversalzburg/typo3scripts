@@ -59,7 +59,6 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 runSelfUpdate() {
   echo "Performing self-update..."
   
-  
   # Download new version
   echo -n "Downloading latest version..."
   if ! wget --quiet --output-document="$0.tmp" $UPDATE_BASE/$SELF ; then
@@ -89,7 +88,7 @@ fi
 EOF
   
   echo -n "Inserting update process..."
-  exec updateScript.sh
+  exec /bin/bash updateScript.sh
 }
 
 # Read external configuration
