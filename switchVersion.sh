@@ -147,28 +147,46 @@ else
     echo "NOT found!"
     echo "Archive already exists. Trying to resume download."
     echo -n "Downloading $TYPO3_DOWNLOAD_URL..."
-    wget --quiet --continue $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE
+    if ! wget --quiet --continue $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE; then
+      echo "Failed!"
+      exit 1
+    fi
   else
     echo "NOT found! Downloading."
     echo -n "Downloading $TYPO3_DOWNLOAD_URL..."
-    wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE
+    if ! wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE; then
+      echo "Failed!"
+      exit 1
+    fi
   fi
   echo "Done."
 
   echo -n "Extracting source package $VERSION_FILE..."
-  tar --extract --gzip --directory $BASE --file $VERSION_FILE
+  if ! tar --extract --gzip --directory $BASE --file $VERSION_FILE; then
+    echo "Failed!"
+    exit 1
+  fi
   echo "Done."
 fi
 
 # Switch symlink
 echo -n "Switching Typo3 source symlink to $VERSION_DIR..."
-rm --force $SYMLINK
-ln --symbolic $VERSION_DIRNAME $SYMLINK
+if ! rm --force $SYMLINK; then
+  echo "Failed! Unable to remove old symlink '$SYMLINK'"
+  exit 1
+fi
+if ! ln --symbolic $VERSION_DIRNAME $SYMLINK; then
+  echo "Failed! Unable to create new symlink '$SYMLINK'"
+  exit 1
+fi
 echo "Done."
 
 # Delete old, cached files
 echo -n "Deleting temp_CACHED_* files from typo3conf..."
-rm --force $BASE/typo3conf/temp_CACHED_*
+if ! rm --force $BASE/typo3conf/temp_CACHED_*; then
+  echo "Failed!"
+  # No need to exit. Failing to delete cache files is not critical to operation
+fi
 
 echo "Done!"
 echo "Version switched to $VERSION."

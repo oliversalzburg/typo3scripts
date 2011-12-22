@@ -185,8 +185,17 @@ fi
 echo "Done."
 
 echo -n "Extracting Typo3 package $VERSION_FILENAME..."
-tar --extract --gzip --file $VERSION_FILENAME
-mv $VERSION_NAME $BASE
+if ! tar --extract --gzip --file $VERSION_FILENAME; then
+  echo "Failed!"
+  exit 1
+fi
+echo "Done."
+
+echo -n "Moving Typo3 package to $BASE..."
+if ! mv $VERSION_NAME $BASE; then
+  echo "Failed!"
+  exit 1
+fi
 echo "Done."
 
 # Generate configuration
@@ -197,8 +206,15 @@ TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_password = '$PASS';\n"
 TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_host     = '$HOST';\n"
 TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db          = '$DB';\n"
 # Write configuration
-cp $BASE/typo3conf/localconf.php $BASE/typo3conf/localconf.php.orig
-sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/localconf.php.orig > $BASE/typo3conf/localconf.php
+if ! cp $BASE/typo3conf/localconf.php $BASE/typo3conf/localconf.php.orig; then
+  echo "Failed! Unable to create copy of localconf.php"
+  exit 1
+fi
+
+if ! sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/localconf.php.orig > $BASE/typo3conf/localconf.php; then
+  echo "Failed! Unable to modify localconf.php"
+  exit 1
+fi
 echo "Done."
 
 # vim:ts=2:sw=2:expandtab:

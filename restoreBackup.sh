@@ -160,18 +160,40 @@ fi
 
 # Begin main operation
 
+# Does the base directory exist?
+if [ ! -d $BASE ]; then
+  echo "The base directory '$BASE' does not seem to exist!"
+  exit 1
+fi
+# Is the base directory writeable?
+if [ ! -w $BASE ]; then
+  echo "The base directory '$BASE' is not writeable!"
+  exit 1
+fi
+
 echo -n "Erasing current Typo3 installation '$BASE'..."
-rm --recursive --force $BASE > /dev/null
+if ! rm --recursive --force $BASE > /dev/null; then
+  echo "Failed!"
+  exit 1
+fi
 echo "Done."
+
 echo -n "Extracting Typo3 backup '$FILE'..."
-tar --extract --gzip --file $FILE > /dev/null
+if ! tar --extract --gzip --file $FILE > /dev/null; then
+  echo "Failed!"
+  exit 1
+fi
 echo "Done."
+
 echo -n "Importing database dump..."
-mysql --host=$HOST --user=$USER --password=$PASS --default-character-set=utf8 $DB < $BASE/database.sql
+if ! mysql --host=$HOST --user=$USER --password=$PASS --default-character-set=utf8 $DB < $BASE/database.sql; then
+  echo "Failed!"
+  exit 1
+fi
 echo "Done."
+
 echo -n "Deleting database dump..."
-rm $BASE/database.sql
-echo "Done."
+rm --force $BASE/database.sql
 echo "Done!"
 
 # vim:ts=2:sw=2:expandtab:

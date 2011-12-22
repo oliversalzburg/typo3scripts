@@ -139,7 +139,20 @@ fi
 
 # Begin main operation
 
+# Does the base directory exist?
+if [ ! -d $BASE ]; then
+  echo "The base directory '$BASE' does not seem to exist!"
+  exit 1
+fi
+# Is the base directory readable?
+if [ ! -r $BASE ]; then
+  echo "The base directory '$BASE' is not readable!"
+  exit 1
+fi
+
+# Filename for snapshot
 FILE=$BASE-$(date +%Y-%m-%d-%H-%M).tgz
+
 echo "Creating Typo3 backup '$FILE'..."
 
 # Create database dump
@@ -152,7 +165,10 @@ echo "Done."
 
 # Create backup archive
 echo -n "Compressing Typo3 installation..."
-tar --create --gzip --file $FILE $BASE > /dev/null
+if ! tar --create --gzip --file $FILE $BASE > /dev/null; then
+  echo "Failed!"
+  exit 1
+fi
 echo "Done."
 
 # Now that the database dump is packed up, delete it
