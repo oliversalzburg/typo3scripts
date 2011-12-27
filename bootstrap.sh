@@ -4,6 +4,7 @@
 # written by Oliver Salzburg
 #
 # Changelog:
+# 1.2.1 - Added ability to skip database configuration
 # 1.2.0 - Added some settings to localconf.php generation
 # 1.1.0 - Code cleaned up
 #         Extended command line paramter support
@@ -28,6 +29,7 @@ showHelp() {
 
   Options:
   --version=VERSION   The version to install.
+  --write-db-config   Writes the database configuration to localconf.php.
   --skip-gm-detect    Skips the detection of GraphicsMagick.
   --skip-unzip-detect Skips the detection of the unzip utility.
 
@@ -68,6 +70,9 @@ USER=*username*
 PASS=*password*
 # The name of the database in which Typo3 is stored
 DB=typo3
+# Should the database configuration be written to the Typo3 configuration?
+# Skipped by default as setting these might conflict with the Typo3 installer.
+SKIP_DB_CONFIG=true
 # Should the detection of GraphicsMagick be skipped?
 SKIP_GM_DETECT=false
 # Should the detection of the unzip utility be skipped?
@@ -140,6 +145,9 @@ for option in $*; do
       ;;
     --version=*)
       VERSION=$(echo $option | cut -d'=' -f2)
+      ;;
+    --write-db-config)
+      SKIP_DB_CONFIG=false
       ;;
     --skip-gm-detect)
       SKIP_GM_DETECT=true
@@ -230,10 +238,12 @@ echo -n "Generating localconf.php..."
 TYPO3_CONFIG=
 
 # Add database configuration
-TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_username = '$USER';\n"
-TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_password = '$PASS';\n"
-TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_host     = '$HOST';\n"
-TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db          = '$DB';\n"
+if ! $SKIP_DB_CONFIG; then
+  TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_username = '$USER';\n"
+  TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_password = '$PASS';\n"
+  TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_host     = '$HOST';\n"
+  TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db          = '$DB';\n"
+fi
 
 # Add GraphicsMagick (if available)
 if ! $SKIP_GM_DETECT; then
