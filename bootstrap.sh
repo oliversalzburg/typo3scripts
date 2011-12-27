@@ -4,6 +4,8 @@
 # written by Oliver Salzburg
 #
 # Changelog:
+# 1.3.1 - Adjusting the access rights can now be skipped
+# 1.3.0 - The access rights for the Typo3 installation will now be adjusted
 # 1.2.1 - Added ability to skip database configuration
 # 1.2.0 - Added some settings to localconf.php generation
 # 1.1.0 - Code cleaned up
@@ -32,6 +34,8 @@ showHelp() {
   --write-db-config   Writes the database configuration to localconf.php.
   --skip-gm-detect    Skips the detection of GraphicsMagick.
   --skip-unzip-detect Skips the detection of the unzip utility.
+  --skip-rights       Skip trying to fix access rights.
+  --httpd-group=GROUP The user group the local HTTP daemon is running as.
 
   Database:
   --hostname=HOST     The name of the host where the Typo3 database is running.
@@ -77,6 +81,11 @@ SKIP_DB_CONFIG=true
 SKIP_GM_DETECT=false
 # Should the detection of the unzip utility be skipped?
 SKIP_UNZIP_DETECT=false
+# Should we try to fix access permissions for files of the new
+# installation?
+SKIP_RIGHTS=false
+# The group the local http daemon is running as (usually www-data or apache)
+HTTPD_GROUP=www-data
 # Script Configuration end
 
 # Pre-initialize password to random 16-character string if possible
@@ -155,6 +164,12 @@ for option in $*; do
     --skip-unzip-detect)
       SKIP_UNZIP_DETECT=true
       ;;
+    --skip-rights)
+      SKIP_RIGHTS=true
+      ;;
+    --httpd-group=*)
+      HTTPD_GROUP=$(echo $option | cut -d'=' -f2)
+      ;;
     --hostname=*)
       HOST=$(echo $option | cut -d'=' -f2)
       ;;
@@ -187,6 +202,16 @@ if [[ -d "$BASE" ]]; then
   echo "A directory named $BASE already exists. $SELF will not overwrite existing content."
   echo "Please remove the folder $BASE manually and run this script again."
   exit 1
+fi
+
+# Check argument validity
+
+# Are we running as root?
+if [ "$(id -u)" != "0" ]; then
+  if ! $SKIP_RIGHTS; then
+    SKIP_RIGHTS=true
+    echo "Adjusting access rights for the target installation will be skipped because this script is not running with root privileges!"
+  fi
 fi
 
 # The name of the package and the folder it will live in
@@ -278,5 +303,18 @@ if ! sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/
   exit 1
 fi
 echo "Done."
+
+# Fix permissions
+if ! $SKIP_RIGHTS; then
+  echo -n "Adjusting access permissions for Typo3 installation..."
+  if ! $(id --group $HTTPD_GROUP > /dev/null); then
+    echo "Failed! The supplied group '$HTTPD_GROUP' is not known on the system."
+    exit 1
+  else
+    sudo chgrp --recursive $HTTPD_GROUP $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
+    sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
+  fi
+  echo "Done."
+fi
 
 # vim:ts=2:sw=2:expandtab:
