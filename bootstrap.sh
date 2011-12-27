@@ -4,6 +4,8 @@
 # written by Oliver Salzburg
 #
 # Changelog:
+# 1.4.0 - Script is now fully able to create an installation from scratch to
+#         Typo3 1-2-3 installer
 # 1.3.1 - Adjusting the access rights can now be skipped
 # 1.3.0 - The access rights for the Typo3 installation will now be adjusted
 # 1.2.1 - Added ability to skip database configuration
@@ -316,5 +318,10 @@ if ! $SKIP_RIGHTS; then
   fi
   echo "Done."
 fi
+
+# Enable install tool
+echo -n "Enabling install tool..."
+touch $BASE/typo3conf/ENABLE_INSTALL_TOOL
+echo "Done."
 
 # vim:ts=2:sw=2:expandtab:
