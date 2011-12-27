@@ -33,7 +33,7 @@ showHelp() {
 
   Options:
   --version=VERSION   The version to install.
-  --write-db-config   Writes the database configuration to localconf.php.
+  --skip-db-config    Skips writing the database configuration to localconf.php
   --skip-gm-detect    Skips the detection of GraphicsMagick.
   --skip-unzip-detect Skips the detection of the unzip utility.
   --skip-rights       Skip trying to fix access rights.
@@ -77,8 +77,7 @@ PASS=*password*
 # The name of the database in which Typo3 is stored
 DB=typo3
 # Should the database configuration be written to the Typo3 configuration?
-# Skipped by default as setting these might conflict with the Typo3 installer.
-SKIP_DB_CONFIG=true
+SKIP_DB_CONFIG=false
 # Should the detection of GraphicsMagick be skipped?
 SKIP_GM_DETECT=false
 # Should the detection of the unzip utility be skipped?
@@ -157,8 +156,8 @@ for option in $*; do
     --version=*)
       VERSION=$(echo $option | cut -d'=' -f2)
       ;;
-    --write-db-config)
-      SKIP_DB_CONFIG=false
+    --skip-db-config)
+      SKIP_DB_CONFIG=true
       ;;
     --skip-gm-detect)
       SKIP_GM_DETECT=true
@@ -269,7 +268,9 @@ if ! $SKIP_DB_CONFIG; then
   TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_username = '$USER';\n"
   TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_password = '$PASS';\n"
   TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_host     = '$HOST';\n"
-  TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db          = '$DB';\n"
+  # Writing the database name is currently disabled. There doesn't seem to be
+  # any advantage to it and it conflicts with the Typo3 installer.
+  #TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db          = '$DB';\n"
 fi
 
 # Add GraphicsMagick (if available)
