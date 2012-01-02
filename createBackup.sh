@@ -120,6 +120,24 @@ for option in $*; do
   esac
 done
 
+# Check for dependencies
+function checkDependency() {
+  if ! hash $1 2>&-; then
+    echo "Failed!"
+    echo "This script requires '$1' but it can not be found. Aborting." >&2
+    exit 1
+  fi
+}
+echo -n "Checking dependencies..."
+checkDependency wget
+checkDependency curl
+checkDependency md5sum
+checkDependency grep
+checkDependency awk
+checkDependency tar
+checkDependency mysqldump
+echo "Succeeded."
+
 # Update check
 SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $1}')
 SUM_SELF=$(md5sum "$0" | awk '{print $1}')
