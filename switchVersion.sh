@@ -2,19 +2,6 @@
 
 # Typo3 Version Switching Script
 # written by Oliver Salzburg
-#
-# Changelog:
-# 1.5.0 - Code cleaned up
-#         Extended command line paramter support
-#         Improved self-updating
-# 1.4.2 - Fixed update location
-# 1.4.1 - Now using generic config file sourcing approach
-# 1.4.0 - Added update check functionality
-# 1.3.0 - Script will now delte temp_CACHED files from typo3conf after version
-#         switch
-# 1.2.0 - Added self-updating functionality
-# 1.1.0 - Configuration can now be sourced from switchVersion.conf
-# 1.0.0 - Initial release
 
 set -o nounset
 set -o errexit

@@ -2,20 +2,6 @@
 
 # Typo3 Bootstrapper Script
 # written by Oliver Salzburg
-#
-# Changelog:
-# 1.5.0 - Install tool is now locked with random password by default.
-# 1.4.1 - Added validity check for version parameter
-# 1.4.0 - Script is now fully able to create an installation from scratch to
-#         Typo3 1-2-3 installer
-# 1.3.1 - Adjusting the access rights can now be skipped
-# 1.3.0 - The access rights for the Typo3 installation will now be adjusted
-# 1.2.1 - Added ability to skip database configuration
-# 1.2.0 - Added some settings to localconf.php generation
-# 1.1.0 - Code cleaned up
-#         Extended command line paramter support
-#         Improved self-updating
-# 1.0.0 - Initial release
 
 set -o nounset
 set -o errexit

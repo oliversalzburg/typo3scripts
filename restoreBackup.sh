@@ -2,21 +2,6 @@
  
 # Typo3 Installation Backup Restore Script
 # written by Oliver Salzburg
-#
-# Changelog:
-# 1.4.1 - Added validity check for file parameter
-# 1.4.0 - Code cleaned up
-#         Extended command line paramter support
-#         Improved self-updating
-# 1.3.4 - Fixed update location
-# 1.3.3 - Now using generic config file sourcing approach
-# 1.3.2 - Now using explicit modifiers
-# 1.3.1 - Typo3 base installation directory is now configurable
-# 1.3.0 - Added update check functionality
-# 1.2.0 - Added self-updating functionality
-# 1.1.1 - Fixed database not being interpreted as UTF-8 after restore
-# 1.1.0 - Configuration can now be sourced from restoreBackup.conf
-# 1.0.0 - Initial release
 
 set -o nounset
 set -o errexit
