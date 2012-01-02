@@ -4,6 +4,7 @@
 # written by Oliver Salzburg
 #
 # Changelog:
+# 1.5.0 - Install tool is now locked with random password by default.
 # 1.4.1 - Added validity check for version parameter
 # 1.4.0 - Script is now fully able to create an installation from scratch to
 #         Typo3 1-2-3 installer
@@ -95,7 +96,10 @@ HTTPD_GROUP=www-data
 
 # Pre-initialize password to random 16-character string if possible
 if [[ -e /dev/urandom ]]; then
+  # Generate a password for the database user
   PASS=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
+  # Generate another password for the Typo3 install tool
+  INSTALL_TOOL_PASSWORD=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
 fi
 
 # Pre-initialize the owner to the user that called sudo (if applicable)
@@ -290,6 +294,10 @@ if ! $SKIP_DB_CONFIG; then
   #TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db          = '$DB';\n"
 fi
 
+# Write Typo3 install tool password
+INSTALL_TOOL_PASSWORD_HASH=$(echo -n $INSTALL_TOOL_PASSWORD | md5sum | awk '{print $1}')
+TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['BE']['installToolPassword'] = '$INSTALL_TOOL_PASSWORD_HASH';\n"
+
 # Add GraphicsMagick (if available)
 if ! $SKIP_GM_DETECT; then
   if ! hash gm 2>&-; then
@@ -342,5 +350,7 @@ fi
 echo -n "Enabling install tool..."
 touch $BASE/typo3conf/ENABLE_INSTALL_TOOL
 echo "Done."
+echo
+echo "Your Typo3 Install Tool password is: '$INSTALL_TOOL_PASSWORD'"
 
 # vim:ts=2:sw=2:expandtab:
