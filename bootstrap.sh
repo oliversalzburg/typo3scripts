@@ -88,7 +88,7 @@ SKIP_UNZIP_DETECT=false
 # installation?
 SKIP_RIGHTS=false
 # The owner of the Typo3 installation
-OWNER=$SUDO_USER
+OWNER=$(id --user --name)
 # The group the local http daemon is running as (usually www-data or apache)
 HTTPD_GROUP=www-data
 # Script Configuration end
@@ -96,6 +96,11 @@ HTTPD_GROUP=www-data
 # Pre-initialize password to random 16-character string if possible
 if [[ -e /dev/urandom ]]; then
   PASS=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
+fi
+
+# Pre-initialize the owner to the user that called sudo (if applicable)
+if [ "$(id -u)" == "0" ]; then
+  OWNER=$SUDO_USER
 fi
 
 # The base location from where to retrieve new versions of this script
