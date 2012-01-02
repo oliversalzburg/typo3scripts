@@ -95,7 +95,7 @@ HTTPD_GROUP=www-data
 # Script Configuration end
 
 # Pre-initialize password to random 16-character string if possible
-if [[ -e /dev/urandom ]]; then
+if [[ -r /dev/urandom ]]; then
   # Generate a password for the database user
   PASS=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
   # Generate another password for the Typo3 install tool
