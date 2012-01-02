@@ -116,7 +116,7 @@ EOF
 
 # Read external configuration
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [[ -e "$CONFIG_FILENAME" ]]; then
+if [[ -e "$CONFIG_FILENAME" ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-h" ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."
