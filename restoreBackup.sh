@@ -188,7 +188,7 @@ if [ ! -w $BASE ]; then
 fi
 # Check if we can delete the target base folder
 echo -n "Testing write permissions in $BASE..."
-if ! find $BASE \( -exec test -w {} \; -o \( -exec echo {} \; -quit \) \) | xargs -I {} bash -c "if [ -n "{}" ]; then echo Failed\!\n{} is not writable\!; exit 1; fi"; then
+if ! find $BASE \( -exec test -w {} \; -o \( -exec echo {} \; -quit \) \) | xargs -I {} bash -c "if [ -n "{}" ]; then echo Failed\!; echo {} is not writable\!; exit 1; fi"; then
   exit 1
 fi
 echo "Succeeded"
