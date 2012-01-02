@@ -88,7 +88,7 @@ SKIP_UNZIP_DETECT=false
 # installation?
 SKIP_RIGHTS=false
 # The owner of the Typo3 installation
-OWNER=$(id -u -n)
+OWNER=$SUDO_USER
 # The group the local http daemon is running as (usually www-data or apache)
 HTTPD_GROUP=www-data
 # Script Configuration end
