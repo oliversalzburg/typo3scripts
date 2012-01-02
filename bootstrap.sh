@@ -38,6 +38,7 @@ showHelp() {
   --skip-gm-detect    Skips the detection of GraphicsMagick.
   --skip-unzip-detect Skips the detection of the unzip utility.
   --skip-rights       Skip trying to fix access rights.
+  --owner=OWNER       The name of the user that owns the installation.
   --httpd-group=GROUP The user group the local HTTP daemon is running as.
 
   Database:
@@ -86,6 +87,8 @@ SKIP_UNZIP_DETECT=false
 # Should we try to fix access permissions for files of the new
 # installation?
 SKIP_RIGHTS=false
+# The owner of the Typo3 installation
+OWNER=$(id -u -n)
 # The group the local http daemon is running as (usually www-data or apache)
 HTTPD_GROUP=www-data
 # Script Configuration end
@@ -168,6 +171,9 @@ for option in $*; do
       ;;
     --skip-rights)
       SKIP_RIGHTS=true
+      ;;
+    --owner=*)
+      OWNER=$(echo $option | cut -d'=' -f2)
       ;;
     --httpd-group=*)
       HTTPD_GROUP=$(echo $option | cut -d'=' -f2)
@@ -320,6 +326,7 @@ if ! $SKIP_RIGHTS; then
     echo "Failed! The supplied group '$HTTPD_GROUP' is not known on the system."
     exit 1
   else
+    sudo chown --recursive $OWNER $BASE
     sudo chgrp --recursive $HTTPD_GROUP $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
     sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
   fi
