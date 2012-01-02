@@ -104,7 +104,7 @@ function runSelfUpdate() {
 # Overwrite old file with new
 if mv "$0.tmp" "$0"; then
   echo "Done. Update complete."
-  rm \$0
+  rm -- \$0
 else
   echo "Failed!"
 fi
@@ -188,7 +188,7 @@ if [ ! -w $BASE ]; then
 fi
 
 echo -n "Erasing current Typo3 installation '$BASE'..."
-if ! rm --recursive --force $BASE > /dev/null; then
+if ! rm --recursive --force -- $BASE > /dev/null; then
   echo "Failed!"
   exit 1
 fi
@@ -209,7 +209,7 @@ fi
 echo "Done."
 
 echo -n "Deleting database dump..."
-rm --force $BASE/database.sql
+rm --force -- $BASE/database.sql
 echo "Done!"
 
 # vim:ts=2:sw=2:expandtab:

@@ -84,7 +84,7 @@ function runSelfUpdate() {
 # Overwrite old file with new
 if mv "$0.tmp" "$0"; then
   echo "Done. Update complete."
-  rm \$0
+  rm -- \$0
 else
   echo "Failed!"
 fi
@@ -176,7 +176,7 @@ echo "Done."
 
 # Now that the database dump is packed up, delete it
 echo -n "Deleting database dump..."
-rm --force $BASE/database.sql
+rm --force -- $BASE/database.sql
 echo "Done!"
 
 # vim:ts=2:sw=2:expandtab:

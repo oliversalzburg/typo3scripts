@@ -127,7 +127,7 @@ function runSelfUpdate() {
 # Overwrite old file with new
 if mv "$0.tmp" "$0"; then
   echo "Done. Update complete."
-  rm \$0
+  rm -- \$0
 else
   echo "Failed!"
 fi

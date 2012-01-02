@@ -86,7 +86,7 @@ function runSelfUpdate() {
 # Overwrite old file with new
 if mv "$0.tmp" "$0"; then
   echo "Done. Update complete."
-  rm \$0
+  rm -- \$0
 else
   echo "Failed!"
 fi
@@ -174,7 +174,7 @@ fi
 
 # Switch symlink
 echo -n "Switching Typo3 source symlink to $VERSION_DIR..."
-if ! rm --force $SYMLINK; then
+if ! rm --force -- $SYMLINK; then
   echo "Failed! Unable to remove old symlink '$SYMLINK'"
   exit 1
 fi
@@ -186,7 +186,7 @@ echo "Done."
 
 # Delete old, cached files
 echo -n "Deleting temp_CACHED_* files from typo3conf..."
-if ! rm --force $BASE/typo3conf/temp_CACHED_*; then
+if ! rm --force -- $BASE/typo3conf/temp_CACHED_*; then
   echo "Failed!"
   # No need to exit. Failing to delete cache files is not critical to operation
 fi
