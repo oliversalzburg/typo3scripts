@@ -4,6 +4,7 @@
 # written by Oliver Salzburg
 #
 # Changelog:
+# 1.4.1 - Added validity check for file parameter
 # 1.4.0 - Code cleaned up
 #         Extended command line paramter support
 #         Improved self-updating
@@ -162,6 +163,18 @@ if [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
 fi
 
 # Begin main operation
+
+# Check argument validity
+if [ ! -e "$FILE" ]; then
+  if [[ $FILE == --* ]]; then
+    echo "The given Typo3 snapshot '$FILE' looks like a command line parameter."
+    echo "Please use the --file parameter when giving multiple arguments."
+    exit 1
+  fi
+  
+  echo "The given snapshot '$FILE' does not exist."
+  exit 1
+fi
 
 # Does the base directory exist?
 if [ ! -d $BASE ]; then
