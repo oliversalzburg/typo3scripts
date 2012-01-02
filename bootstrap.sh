@@ -4,6 +4,7 @@
 # written by Oliver Salzburg
 #
 # Changelog:
+# 1.4.1 - Added validity check for version parameter
 # 1.4.0 - Script is now fully able to create an installation from scratch to
 #         Typo3 1-2-3 installer
 # 1.3.1 - Adjusting the access rights can now be skipped
@@ -206,6 +207,11 @@ if [[ -d "$BASE" ]]; then
 fi
 
 # Check argument validity
+if [[ $VERSION == --* ]]; then
+  echo "The given Typo3 version '$VERSION' looks like a command line parameter."
+  echo "Please use the --version parameter when giving multiple arguments."
+  exit 1
+fi
 
 # Are we running as root?
 if [ "$(id -u)" != "0" ]; then
