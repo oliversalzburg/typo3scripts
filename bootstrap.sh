@@ -22,7 +22,7 @@ set -o errexit
 SELF=$(basename "$0")
 
 # Show the help for this script
-showHelp() {
+function showHelp() {
   cat << EOF
   Usage: $0 [OPTIONS --version=<VERSION>]|<VERSION>
 
@@ -102,7 +102,7 @@ fi
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
 # Self-update
-runSelfUpdate() {
+function runSelfUpdate() {
   echo "Performing self-update..."
 
   # Download new version
@@ -264,7 +264,7 @@ echo "Done."
 
 # Print a single newline, but only the first time it is called
 _NEWLINE_PRINTED=false
-newLineOnce() {
+function newLineOnce() {
   if $_NEWLINE_PRINTED; then
       return
   fi

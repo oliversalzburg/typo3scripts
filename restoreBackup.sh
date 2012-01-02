@@ -24,7 +24,7 @@ set -o errexit
 SELF=$(basename "$0")
 
 # Show the help for this script
-showHelp() {
+function showHelp() {
   cat << EOF
   Usage: $0 [OPTIONS --file=<FILE>]|<FILE>
   
@@ -79,7 +79,7 @@ DB=typo3
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
 # Self-update
-runSelfUpdate() {
+function runSelfUpdate() {
   echo "Performing self-update..."
   
   # Download new version
