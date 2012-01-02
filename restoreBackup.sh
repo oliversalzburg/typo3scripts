@@ -186,6 +186,12 @@ if [ ! -w $BASE ]; then
   echo "The base directory '$BASE' is not writeable!"
   exit 1
 fi
+# Check if we can delete the target base folder
+echo -n "Testing write permissions in $BASE..."
+if ! find $BASE \( -exec test -w {} \; -o \( -exec echo {} \; -quit \) \) | xargs -I {} bash -c "if [ -n "{}" ]; then echo Failed\!\n{} is not writable\!; exit 1; fi"; then
+  exit 1
+fi
+echo "Succeeded"
 
 echo -n "Erasing current Typo3 installation '$BASE'..."
 if ! rm --recursive --force -- $BASE > /dev/null; then
