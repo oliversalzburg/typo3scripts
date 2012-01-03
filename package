@@ -5,5 +5,5 @@ echo -n "Generating $PACKAGE..."
 if [ -w $PACKAGE ]; then
 	rm -f $PACKAGE
 fi
-tar cvzf $PACKAGE *.sh > /dev/null
+tar czf $PACKAGE *.sh
 echo "Done."
