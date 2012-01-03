@@ -1,0 +1,9 @@
+#!/bin/sh
+REVISION=$(svn info | grep "Revision:" | awk '{print $2}')
+PACKAGE=typo3scripts-r$REVISION.tgz
+echo -n "Generating $PACKAGE..."
+if [ -w $PACKAGE ]; then
+	rm -f $PACKAGE
+fi
+tar cvzf $PACKAGE *.sh > /dev/null
+echo "Done."
