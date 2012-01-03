@@ -18,6 +18,8 @@ function showHelp() {
   --update          Tries to update the script to the latest version.
   --base=PATH       The name of the base path where Typo3 should be installed.
                     If no base is supplied, "typo3" is used.
+  --export-config   Prints the default configuration of this script.
+  
   Options:
   --version=VERSION The version to switch to.
   
@@ -27,6 +29,13 @@ function showHelp() {
         version through the --version command line parameter.
 EOF
   exit 0
+}
+
+# Print the default configuration to ease creation of a config file.
+function exportConfig() {
+  # Spaces are escaped here to avoid sed matching this line when exporting the
+  # configuration
+  sed -n "/#\ Script\ Configuration\ start/,/# Script Configuration end/p" "$0"
 }
 
 # Check on minimal command line argument count
@@ -102,6 +111,10 @@ for option in $*; do
       ;;
     --base=*)
       BASE=$(echo $option | cut -d'=' -f2)
+      ;;
+    --export-config)
+      exportConfig
+      exit 0
       ;;
     --version=*)
       VERSION=$(echo $option | cut -d'=' -f2)

@@ -18,6 +18,8 @@ function showHelp() {
   --update            Tries to update the script to the latest version.
   --base=PATH         The name of the base path where Typo3 should be 
                       installed. If no base is supplied, "typo3" is used.
+  --export-config     Prints the default configuration of this script.
+  
   Database:
   --hostname=HOST     The name of the host where the Typo3 database is running.
   --username=USER     The username to use when connecting to the Typo3
@@ -27,6 +29,13 @@ function showHelp() {
   --database=DB       The name of the database in which Typo3 is stored.
 EOF
   exit 0
+}
+
+# Print the default configuration to ease creation of a config file.
+function exportConfig() {
+  # Spaces are escaped here to avoid sed matching this line when exporting the
+  # configuration
+  sed -n "/#\ Script\ Configuration\ start/,/# Script Configuration end/p" "$0"
 }
 
 # Script Configuration start
@@ -100,6 +109,10 @@ for option in $*; do
       ;;
     --base=*)
       BASE=$(echo $option | cut -d'=' -f2)
+      ;;
+    --export-config)
+      exportConfig
+      exit 0
       ;;
     --hostname=*)
       HOST=$(echo $option | cut -d'=' -f2)
