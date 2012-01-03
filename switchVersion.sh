@@ -93,7 +93,7 @@ EOF
 
 # Read external configuration
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [[ -e "$CONFIG_FILENAME" ]] && [[ $# > 1 ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-h" ]]; then
+if [[ -e "$CONFIG_FILENAME" && $# > 1 && "$1" != "--help" && "$1" != "-h" ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."
@@ -150,6 +150,13 @@ if [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
 fi
 
 # Begin main operation
+
+# Check argument validity
+if [[ $VERSION == --* ]]; then
+  echo "The given Typo3 version '$VERSION' looks like a command line parameter."
+  echo "Please use the --version parameter when giving multiple arguments."
+  exit 1
+fi
 
 VERSION_FILENAME=typo3_src-$VERSION.tar.gz
 TYPO3_DOWNLOAD_URL=http://prdownloads.sourceforge.net/typo3/$VERSION_FILENAME
