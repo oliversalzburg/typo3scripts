@@ -2,19 +2,6 @@
 
 # Typo3 Version Switching Script
 # written by Oliver Salzburg
-#
-# Changelog:
-# 1.5.0 - Code cleaned up
-#         Extended command line paramter support
-#         Improved self-updating
-# 1.4.2 - Fixed update location
-# 1.4.1 - Now using generic config file sourcing approach
-# 1.4.0 - Added update check functionality
-# 1.3.0 - Script will now delte temp_CACHED files from typo3conf after version
-#         switch
-# 1.2.0 - Added self-updating functionality
-# 1.1.0 - Configuration can now be sourced from switchVersion.conf
-# 1.0.0 - Initial release
 
 set -o nounset
 set -o errexit
@@ -22,7 +9,7 @@ set -o errexit
 SELF=$(basename "$0")
 
 # Show the help for this script
-showHelp() {
+function showHelp() {
   cat << EOF
   Usage: $0 [OPTIONS --version=<VERSION>]|<VERSION>
   
@@ -31,6 +18,8 @@ showHelp() {
   --update          Tries to update the script to the latest version.
   --base=PATH       The name of the base path where Typo3 should be installed.
                     If no base is supplied, "typo3" is used.
+  --export-config   Prints the default configuration of this script.
+  
   Options:
   --version=VERSION The version to switch to.
   
@@ -39,7 +28,13 @@ showHelp() {
         When supplying any other command line argument, supply the target
         version through the --version command line parameter.
 EOF
-  exit 0
+}
+
+# Print the default configuration to ease creation of a config file.
+function exportConfig() {
+  # Spaces are escaped here to avoid sed matching this line when exporting the
+  # configuration
+  sed -n "/#\ Script\ Configuration\ start/,/# Script Configuration end/p" "$0"
 }
 
 # Check on minimal command line argument count
@@ -61,7 +56,7 @@ VERSION=$1
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
 # Self-update
-runSelfUpdate() {
+function runSelfUpdate() {
   echo "Performing self-update..."
   
   # Download new version
@@ -86,7 +81,7 @@ runSelfUpdate() {
 # Overwrite old file with new
 if mv "$0.tmp" "$0"; then
   echo "Done. Update complete."
-  rm \$0
+  rm -- \$0
 else
   echo "Failed!"
 fi
@@ -98,7 +93,7 @@ EOF
 
 # Read external configuration
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [[ -e "$CONFIG_FILENAME" ]]; then
+if [[ -e "$CONFIG_FILENAME" && $# > 1 && "$1" != "--help" && "$1" != "-h" ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."
@@ -109,12 +104,17 @@ for option in $*; do
   case "$option" in
     --help|-h)
       showHelp
+      exit 0
       ;;
     --update)
       runSelfUpdate
       ;;
     --base=*)
       BASE=$(echo $option | cut -d'=' -f2)
+      ;;
+    --export-config)
+      exportConfig
+      exit 0
       ;;
     --version=*)
       VERSION=$(echo $option | cut -d'=' -f2)
@@ -125,14 +125,38 @@ for option in $*; do
   esac
 done
 
+# Check for dependencies
+function checkDependency() {
+  if ! hash $1 2>&-; then
+    echo "Failed!"
+    echo "This script requires '$1' but it can not be found. Aborting." >&2
+    exit 1
+  fi
+}
+echo -n "Checking dependencies..."
+checkDependency wget
+checkDependency curl
+checkDependency md5sum
+checkDependency grep
+checkDependency awk
+checkDependency tar
+echo "Succeeded."
+
 # Update check
 SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $1}')
-SUM_SELF=$(md5sum $0 | awk '{print $1}')
+SUM_SELF=$(md5sum "$0" | awk '{print $1}')
 if [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
   echo "NOTE: New version available!"
 fi
 
 # Begin main operation
+
+# Check argument validity
+if [[ $VERSION == --* ]]; then
+  echo "The given Typo3 version '$VERSION' looks like a command line parameter."
+  echo "Please use the --version parameter when giving multiple arguments."
+  exit 1
+fi
 
 VERSION_FILENAME=typo3_src-$VERSION.tar.gz
 TYPO3_DOWNLOAD_URL=http://prdownloads.sourceforge.net/typo3/$VERSION_FILENAME
@@ -174,7 +198,7 @@ fi
 
 # Switch symlink
 echo -n "Switching Typo3 source symlink to $VERSION_DIR..."
-if ! rm --force $SYMLINK; then
+if ! rm --force -- $SYMLINK; then
   echo "Failed! Unable to remove old symlink '$SYMLINK'"
   exit 1
 fi
@@ -186,7 +210,7 @@ echo "Done."
 
 # Delete old, cached files
 echo -n "Deleting temp_CACHED_* files from typo3conf..."
-if ! rm --force $BASE/typo3conf/temp_CACHED_*; then
+if ! rm --force -- $BASE/typo3conf/temp_CACHED_*; then
   echo "Failed!"
   # No need to exit. Failing to delete cache files is not critical to operation
 fi

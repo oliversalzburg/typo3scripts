@@ -1,4 +1,4 @@
-8d211c167652494ecf349c0e5ac89147  bootstrap.sh
-dc00f6d408a5f778375f84cf31c832b6  createBackup.sh
-e095cb5709fdee6a4af4e5aacf6ee75d  restoreBackup.sh
-f8dd70715575179200f0b01701aef352  switchVersion.sh
+88a1a79f5084e6ba58f439ba532f1b34  bootstrap.sh
+e29765080e8ede3d64dcb17c9d7a236e  createBackup.sh
+18c2f6c4f4e81c81c9a761d25dac3965  restoreBackup.sh
+cd267dd657adb818a9b646b3791636a3  switchVersion.sh
