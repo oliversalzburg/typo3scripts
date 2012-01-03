@@ -348,6 +348,11 @@ if ! sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/
 fi
 echo "Done."
 
+# Enable install tool
+echo -n "Enabling install tool..."
+touch "$BASE/typo3conf/FIRST_INSTALL"
+echo "Done."
+
 # Fix permissions
 if ! $SKIP_RIGHTS; then
   echo -n "Adjusting access permissions for Typo3 installation..."
@@ -362,10 +367,6 @@ if ! $SKIP_RIGHTS; then
   echo "Done."
 fi
 
-# Enable install tool
-echo -n "Enabling install tool..."
-touch $BASE/typo3conf/ENABLE_INSTALL_TOOL
-echo "Done."
 echo
 echo "Your Typo3 Install Tool password is: '$INSTALL_TOOL_PASSWORD'"
 
