@@ -225,8 +225,10 @@ fi
 echo "Done."
 
 echo -n "Importing database dump..."
-if ! mysql --host=$HOST --user=$USER --password=$PASS --default-character-set=utf8 $DB < $BASE/database.sql; then
+_errorMessage=$(mysql --host=$HOST --user=$USER --password=$PASS --default-character-set=utf8 $DB < $BASE/database.sql 2>&1 >/dev/null || true)
+if [[ !$? ]]; then
   echo "Failed!"
+  echo "Error: $_errorMessage"
   exit 1
 fi
 echo "Done."

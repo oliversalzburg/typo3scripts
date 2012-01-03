@@ -178,8 +178,10 @@ echo "Creating Typo3 backup '$FILE'..."
 
 # Create database dump
 echo -n "Creating database dump at $BASE/database.sql..."
-if ! mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database --databases $DB > $BASE/database.sql; then
+_errorMessage=$(mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database --databases $DB 2>&1 > $BASE/database.sql || true)
+if [[ !$? ]]; then
   echo "Failed!"
+  echo "Error: $_errorMessage"
   exit 1
 fi
 echo "Done."
