@@ -109,7 +109,7 @@ EOF
 
 # Read external configuration
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [[ -e "$CONFIG_FILENAME" ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-h" ]]; then
+if [[ -e "$CONFIG_FILENAME" ]] && [[ $# > 1 ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-h" ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."
@@ -182,7 +182,7 @@ fi
 # Begin main operation
 
 # Check argument validity
-if [ ! -e "$FILE" ]; then
+if [[ ! -e "$FILE" ]]; then
   if [[ $FILE == --* ]]; then
     echo "The given Typo3 snapshot '$FILE' looks like a command line parameter."
     echo "Please use the --file parameter when giving multiple arguments."
@@ -194,12 +194,12 @@ if [ ! -e "$FILE" ]; then
 fi
 
 # Does the base directory exist?
-if [ ! -d $BASE ]; then
+if [[ ! -d $BASE ]]; then
   echo "The base directory '$BASE' does not seem to exist!"
   exit 1
 fi
 # Is the base directory writeable?
-if [ ! -w $BASE ]; then
+if [[ ! -w $BASE ]]; then
   echo "The base directory '$BASE' is not writeable!"
   exit 1
 fi

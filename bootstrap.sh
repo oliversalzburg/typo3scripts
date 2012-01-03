@@ -96,7 +96,7 @@ if [[ -r /dev/urandom ]]; then
 fi
 
 # Pre-initialize the owner to the user that called sudo (if applicable)
-if [ "$(id -u)" == "0" ]; then
+if [[ "$(id -u)" == "0" ]]; then
   OWNER=$SUDO_USER
 fi
 
@@ -141,7 +141,7 @@ EOF
 
 # Read external configuration (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [[ -e "$CONFIG_FILENAME" ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-h" ]]; then
+if [[ -e "$CONFIG_FILENAME" ]] && [[ $# > 1 ]] && [[ "$1" != "--help" ]] && [[ "$1" != "-h" ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."
@@ -245,7 +245,7 @@ if [[ $VERSION == --* ]]; then
 fi
 
 # Are we running as root?
-if [ "$(id -u)" != "0" ]; then
+if [[ "$(id -u)" != "0" ]]; then
   if ! $SKIP_RIGHTS; then
     SKIP_RIGHTS=true
     echo "Adjusting access rights for the target installation will be skipped because this script is not running with root privileges!"
