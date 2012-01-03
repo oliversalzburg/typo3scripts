@@ -36,7 +36,6 @@ function showHelp() {
         When supplying any other command line argument, supply the target file
         through the --file command line parameter.
 EOF
-  exit 0
 }
 
 # Print the default configuration to ease creation of a config file.
@@ -121,6 +120,7 @@ for option in $*; do
   case "$option" in
     --help|-h)
       showHelp
+      exit 0
       ;;
     --update)
       runSelfUpdate

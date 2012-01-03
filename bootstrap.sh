@@ -42,7 +42,6 @@ function showHelp() {
         When supplying other any command line argument, supply the target
         version through the --version command line parameter.
 EOF
-  exit 0
 }
 
 # Print the default configuration to ease creation of a config file.
@@ -153,6 +152,7 @@ for option in $*; do
   case "$option" in
     --help|-h)
       showHelp
+      exit 0
       ;;
     --update)
       runSelfUpdate

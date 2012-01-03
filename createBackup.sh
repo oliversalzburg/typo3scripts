@@ -28,7 +28,6 @@ function showHelp() {
                       database.
   --database=DB       The name of the database in which Typo3 is stored.
 EOF
-  exit 0
 }
 
 # Print the default configuration to ease creation of a config file.
@@ -103,6 +102,7 @@ for option in $*; do
   case "$option" in
     --help|-h)
       showHelp
+      exit 0
       ;;
     --update)
       runSelfUpdate
