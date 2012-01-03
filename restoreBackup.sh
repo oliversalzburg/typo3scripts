@@ -109,7 +109,7 @@ EOF
 
 # Read external configuration
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [[ -e "$CONFIG_FILENAME" && $# > 1 && "$1" != "--help" && "$1" != "-h" ]]; then
+if [[ -e "$CONFIG_FILENAME" && !( $# > 1 && "$1" != "--help" && "$1" != "-h" ) ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."
@@ -225,8 +225,11 @@ fi
 echo "Done."
 
 echo -n "Importing database dump..."
-_errorMessage=$(mysql --host=$HOST --user=$USER --password=$PASS --default-character-set=utf8 $DB < $BASE/database.sql 2>&1 >/dev/null || true)
-if [[ !$? ]]; then
+set +e errexit
+_errorMessage=$(mysql --host=$HOST --user=$USER --password=$PASS --default-character-set=utf8 $DB < $BASE/database.sql 2>&1 >/dev/null)
+_status=$?
+set -e errexit
+if [[ 0 < $_status ]]; then
   echo "Failed!"
   echo "Error: $_errorMessage"
   exit 1

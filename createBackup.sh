@@ -91,7 +91,7 @@ EOF
 
 # Read external configuration
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [[ -e "$CONFIG_FILENAME" && $# > 1 && "$1" != "--help" && "$1" != "-h" ]]; then
+if [[ -e "$CONFIG_FILENAME" && !( $# > 1 && "$1" != "--help" && "$1" != "-h" ) ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."
@@ -178,13 +178,17 @@ echo "Creating Typo3 backup '$FILE'..."
 
 # Create database dump
 echo -n "Creating database dump at $BASE/database.sql..."
-_errorMessage=$(mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database --databases $DB 2>&1 > $BASE/database.sql || true)
-if [[ !$? ]]; then
+set +e errexit
+_errorMessage=$(mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database --databases $DB 2>&1 > $BASE/database.sql)
+_status=$?
+set -e errexit
+if [[ 0 < $_status ]]; then
   echo "Failed!"
   echo "Error: $_errorMessage"
   exit 1
 fi
 echo "Done."
+
 
 # Create backup archive
 echo -n "Compressing Typo3 installation..."
