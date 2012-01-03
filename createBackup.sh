@@ -192,8 +192,8 @@ echo "Done."
 
 # Create backup archive
 echo -n "Compressing Typo3 installation..."
-# Check if pv and gzip are available. Earlier dependency checks only included mandatory binaries.
-if [[ !$(hash pv 2>&-) && !$(hash gzip 2>&-) ]]; then
+# Check if pv, du and gzip are available. Earlier dependency checks only included mandatory binaries.
+if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
   echo
   _folderSize=`du -sk $BASE | cut -f 1`
   if ! $(tar --create --file - $BASE | pv --progress --rate --bytes --size  ${_folderSize}k | gzip > $FILE); then
