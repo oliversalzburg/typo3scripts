@@ -192,10 +192,21 @@ echo "Done."
 
 # Create backup archive
 echo -n "Compressing Typo3 installation..."
-if ! tar --create --gzip --file $FILE $BASE > /dev/null; then
-  echo "Failed!"
-  exit 1
+# Check if pv and gzip are available. Earlier dependency checks only included mandatory binaries.
+if [[ !$(hash pv 2>&-) && !$(hash gzip 2>&-) ]]; then
+  echo
+  _folderSize=`du -sk $BASE | cut -f 1`
+  if ! $(tar --create --file - $BASE | pv --progress --rate --bytes --size  ${_folderSize}k | gzip > $FILE); then
+    echo "Failed!"
+    exit 1
+  fi
+else
+  if ! $(tar --create --gzip --file $FILE $BASE > /dev/null); then
+    echo "Failed!"
+    exit 1
+  fi
 fi
+
 echo "Done."
 
 # Now that the database dump is packed up, delete it
