@@ -28,6 +28,7 @@ function showHelp() {
   --skip-rights       Skip trying to fix access rights.
   --owner=OWNER       The name of the user that owns the installation.
   --httpd-group=GROUP The user group the local HTTP daemon is running as.
+  --fix-indexphp      Replaces the index.php symlink with the actual file.
 
   Database:
   --hostname=HOST     The name of the host where the Typo3 database is running.
@@ -85,6 +86,8 @@ SKIP_RIGHTS=false
 OWNER=$(id --user --name)
 # The group the local http daemon is running as (usually www-data or apache)
 HTTPD_GROUP=www-data
+# Should the index.php symlink be replaced by the actual file?
+FIX_INDEXPHP=false
 # Script Configuration end
 
 # Pre-initialize password to random 16-character string if possible
@@ -184,6 +187,9 @@ for option in $*; do
       ;;
     --httpd-group=*)
       HTTPD_GROUP=$(echo $option | cut -d'=' -f2)
+      ;;
+    --fix-indexphp)
+      FIX_INDEXPHP=true
       ;;
     --hostname=*)
       HOST=$(echo $option | cut -d'=' -f2)
@@ -364,6 +370,14 @@ if ! $SKIP_RIGHTS; then
     sudo chgrp --recursive $HTTPD_GROUP $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
     sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
   fi
+  echo "Done."
+fi
+
+# Fix index.php
+if $FIX_INDEXPHP; then
+  echo -n "Replacing index.php symlink with copy of original file..."
+  rm -f $BASE/index.php
+  cp $BASE/typo3_src/index.php $BASE/index.php
   echo "Done."
 fi
 
