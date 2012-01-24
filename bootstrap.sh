@@ -376,8 +376,8 @@ fi
 # Fix index.php
 if $FIX_INDEXPHP; then
   echo -n "Replacing index.php symlink with copy of original file..."
-  rm -f $BASE/index.php
-  cp $BASE/typo3_src/index.php $BASE/index.php
+  rm -f "$BASE/index.php"
+  cp "$BASE/typo3_src/index.php" "$BASE/index.php"
   echo "Done."
 fi
 
