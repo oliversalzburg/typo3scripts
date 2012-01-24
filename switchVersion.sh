@@ -208,6 +208,21 @@ if ! ln --symbolic $VERSION_DIRNAME $SYMLINK; then
 fi
 echo "Done."
 
+# Check if index.php is a file or a symlink
+# If it is a file, it is an indication of a bootstrap.sh installation using
+# the --fix-indexphp parameter.
+INDEX_PHP=$BASE/index.php
+INDEX_TARGET=$SYMLINK/index.php
+echo -n "Checking if index.php need to be updated..."
+if [[ -h "$INDEX_PHP" ]]; then
+  rm -f "$INDEX_PHP"
+  cp "$INDEX_TARGET" "$INDEX_PHP"
+  echo "Done."
+else
+  echo "Skipped."
+fi
+
+
 # Delete old, cached files
 echo -n "Deleting temp_CACHED_* files from typo3conf..."
 if ! rm --force -- $BASE/typo3conf/temp_CACHED_*; then
