@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Typo3 Version Switching Script
+# TYPO3 Version Switching Script
 # written by Oliver Salzburg
 
 set -o nounset
@@ -16,9 +16,10 @@ function showHelp() {
   Core:
   --help            Display this help and exit.
   --update          Tries to update the script to the latest version.
-  --base=PATH       The name of the base path where Typo3 should be installed.
+  --base=PATH       The name of the base path where TYPO3 should be installed.
                     If no base is supplied, "typo3" is used.
   --export-config   Prints the default configuration of this script.
+  --extract-config  Extracts configuration parameters from TYPO3.
   
   Options:
   --version=VERSION The version to switch to.
@@ -37,6 +38,16 @@ function exportConfig() {
   sed -n "/#\ Script\ Configuration\ start/,/# Script Configuration end/p" "$0"
 }
 
+# Extract all known (database related) parameters from the TYPO3 configuration.
+function extractConfig() {
+  LOCALCONF="$BASE/typo3conf/localconf.php"
+  
+  echo HOST=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_host = ')[^']*(?=';)")
+  echo USER=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_username = ')[^']*(?=';)")
+  echo PASS=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_password = ')[^']*(?=';)")
+  echo DB=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db = ')[^']*(?=';)")
+}
+
 # Check on minimal command line argument count
 REQUIRED_ARGUMENT_COUNT=1
 if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
@@ -46,7 +57,7 @@ if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
 fi
 
 # Script Configuration start
-# The base directory where Typo3 is installed
+# The base directory where TYPO3 is installed
 BASE=typo3
 # The version to switch to
 VERSION=$1
@@ -116,6 +127,10 @@ for option in $*; do
       exportConfig
       exit 0
       ;;
+    --extract-config)
+      extractConfig
+      exit 0
+      ;;
     --version=*)
       VERSION=$(echo $option | cut -d'=' -f2)
       ;;
@@ -153,7 +168,7 @@ fi
 
 # Check argument validity
 if [[ $VERSION == --* ]]; then
-  echo "The given Typo3 version '$VERSION' looks like a command line parameter."
+  echo "The given TYPO3 version '$VERSION' looks like a command line parameter."
   echo "Please use the --version parameter when giving multiple arguments."
   exit 1
 fi
@@ -165,11 +180,11 @@ VERSION_DIRNAME=typo3_src-$VERSION
 VERSION_DIR=$BASE/$VERSION_DIRNAME/
 SYMLINK=$BASE/typo3_src
 
-echo -n "Looking for Typo3 source package at $VERSION_DIR..."
+echo -n "Looking for TYPO3 source package at $VERSION_DIR..."
 if [[ -d "$VERSION_DIR" ]]; then
   echo "Found!"
 else
-  # Retrieve Typo3 source package
+  # Retrieve TYPO3 source package
   if [[ -e "$VERSION_FILE" ]]; then
     echo "NOT found!"
     echo "Archive already exists. Trying to resume download."
@@ -197,7 +212,7 @@ else
 fi
 
 # Switch symlink
-echo -n "Switching Typo3 source symlink to $VERSION_DIR..."
+echo -n "Switching TYPO3 source symlink to $VERSION_DIR..."
 if ! rm --force -- $SYMLINK; then
   echo "Failed! Unable to remove old symlink '$SYMLINK'"
   exit 1
@@ -213,7 +228,7 @@ echo "Done."
 # the --fix-indexphp parameter.
 INDEX_PHP=$BASE/index.php
 INDEX_TARGET=$SYMLINK/index.php
-echo -n "Checking if index.php need to be updated..."
+echo -n "Checking if index.php needs to be updated..."
 if [[ -h "$INDEX_PHP" ]]; then
   rm -f "$INDEX_PHP"
   cp "$INDEX_TARGET" "$INDEX_PHP"

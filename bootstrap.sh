@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Typo3 Bootstrapper Script
+# TYPO3 Bootstrapper Script
 # written by Oliver Salzburg
 
 set -o nounset
@@ -16,9 +16,10 @@ function showHelp() {
   Core:
   --help              Display this help and exit.
   --update            Tries to update the script to the latest version.
-  --base=PATH         The name of the base path where Typo3 should be
+  --base=PATH         The name of the base path where TYPO3 should be
                       installed. If no base is supplied, "typo3" is used.
   --export-config     Prints the default configuration of this script.
+  --extract-config    Extracts configuration parameters from TYPO3.
 
   Options:
   --version=VERSION   The version to install.
@@ -31,12 +32,12 @@ function showHelp() {
   --fix-indexphp      Replaces the index.php symlink with the actual file.
 
   Database:
-  --hostname=HOST     The name of the host where the Typo3 database is running.
-  --username=USER     The username to use when connecting to the Typo3
+  --hostname=HOST     The name of the host where the TYPO3 database is running.
+  --username=USER     The username to use when connecting to the TYPO3
                       database.
-  --password=PASSWORD The password to use when connecting to the Typo3
+  --password=PASSWORD The password to use when connecting to the TYPO3
                       database.
-  --database=DB       The name of the database in which Typo3 is stored.
+  --database=DB       The name of the database in which TYPO3 is stored.
 
   Note: When using an external configuration file, it is sufficient to supply
         just the target version as a parameter.
@@ -52,6 +53,16 @@ function exportConfig() {
   sed -n "/#\ Script\ Configuration\ start/,/# Script Configuration end/p" "$0"
 }
 
+# Extract all known (database related) parameters from the TYPO3 configuration.
+function extractConfig() {
+  LOCALCONF="$BASE/typo3conf/localconf.php"
+  
+  echo HOST=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_host = ')[^']*(?=';)")
+  echo USER=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_username = ')[^']*(?=';)")
+  echo PASS=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_password = ')[^']*(?=';)")
+  echo DB=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db = ')[^']*(?=';)")
+}
+
 # Check on minimal command line argument count
 REQUIRED_ARGUMENT_COUNT=1
 if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
@@ -61,19 +72,19 @@ if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
 fi
 
 # Script Configuration start
-# The base directory where Typo3 should be installed
+# The base directory where TYPO3 should be installed
 BASE=typo3
 # The version to install
 VERSION=$1
-# The hostname of the MySQL server that Typo3 uses
+# The hostname of the MySQL server that TYPO3 uses
 HOST=localhost
 # The username used to connect to that MySQL server
 USER=*username*
 # The password for that user
 PASS=*password*
-# The name of the database in which Typo3 is stored
+# The name of the database in which TYPO3 is stored
 DB=typo3
-# Should the database configuration be written to the Typo3 configuration?
+# Should the database configuration be written to the TYPO3 configuration?
 SKIP_DB_CONFIG=false
 # Should the detection of GraphicsMagick be skipped?
 SKIP_GM_DETECT=false
@@ -82,7 +93,7 @@ SKIP_UNZIP_DETECT=false
 # Should we try to fix access permissions for files of the new
 # installation?
 SKIP_RIGHTS=false
-# The owner of the Typo3 installation
+# The owner of the TYPO3 installation
 OWNER=$(id --user --name)
 # The group the local http daemon is running as (usually www-data or apache)
 HTTPD_GROUP=www-data
@@ -94,7 +105,7 @@ FIX_INDEXPHP=false
 if [[ -r /dev/urandom ]]; then
   # Generate a password for the database user
   PASS=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
-  # Generate another password for the Typo3 install tool
+  # Generate another password for the TYPO3 install tool
   INSTALL_TOOL_PASSWORD=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
 fi
 
@@ -165,6 +176,10 @@ for option in $*; do
       ;;
     --export-config)
       exportConfig
+      exit 0
+      ;;
+    --extract-config)
+      extractConfig
       exit 0
       ;;
     --version=*)
@@ -245,7 +260,7 @@ fi
 
 # Check argument validity
 if [[ $VERSION == --* ]]; then
-  echo "The given Typo3 version '$VERSION' looks like a command line parameter."
+  echo "The given TYPO3 version '$VERSION' looks like a command line parameter."
   echo "Please use the --version parameter when giving multiple arguments."
   exit 1
 fi
@@ -265,7 +280,7 @@ VERSION_FILENAME=$VERSION_NAME.tar.gz
 # The location where the package can be downloaded
 TYPO3_DOWNLOAD_URL=http://prdownloads.sourceforge.net/typo3/$VERSION_FILENAME
 
-echo -n "Looking for Typo3 package at $VERSION_FILENAME..."
+echo -n "Looking for TYPO3 package at $VERSION_FILENAME..."
 if [[ ! -e "$VERSION_FILENAME" ]]; then
   echo "NOT found!"
   echo -n "Downloading $TYPO3_DOWNLOAD_URL..."
@@ -277,14 +292,14 @@ else
 fi
 echo "Done."
 
-echo -n "Extracting Typo3 package $VERSION_FILENAME..."
+echo -n "Extracting TYPO3 package $VERSION_FILENAME..."
 if ! tar --extract --gzip --file $VERSION_FILENAME; then
   echo "Failed!"
   exit 1
 fi
 echo "Done."
 
-echo -n "Moving Typo3 package to $BASE..."
+echo -n "Moving TYPO3 package to $BASE..."
 if ! mv $VERSION_NAME $BASE; then
   echo "Failed!"
   exit 1
@@ -312,11 +327,11 @@ if ! $SKIP_DB_CONFIG; then
   TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_password = '$PASS';\n"
   TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_host     = '$HOST';\n"
   # Writing the database name is currently disabled. There doesn't seem to be
-  # any advantage to it and it conflicts with the Typo3 installer.
+  # any advantage to it and it conflicts with the TYPO3 installer.
   #TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db          = '$DB';\n"
 fi
 
-# Write Typo3 install tool password
+# Write TYPO3 install tool password
 INSTALL_TOOL_PASSWORD_HASH=$(echo -n $INSTALL_TOOL_PASSWORD | md5sum | awk '{print $1}')
 TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['BE']['installToolPassword'] = '$INSTALL_TOOL_PASSWORD_HASH';\n"
 
@@ -361,7 +376,7 @@ echo "Done."
 
 # Fix permissions
 if ! $SKIP_RIGHTS; then
-  echo -n "Adjusting access permissions for Typo3 installation..."
+  echo -n "Adjusting access permissions for TYPO3 installation..."
   if ! $(id --group $HTTPD_GROUP > /dev/null); then
     echo "Failed! The supplied group '$HTTPD_GROUP' is not known on the system."
     exit 1
@@ -382,6 +397,6 @@ if $FIX_INDEXPHP; then
 fi
 
 echo
-echo "Your Typo3 Install Tool password is: '$INSTALL_TOOL_PASSWORD'"
+echo "Your TYPO3 Install Tool password is: '$INSTALL_TOOL_PASSWORD'"
 
 # vim:ts=2:sw=2:expandtab:

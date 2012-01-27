@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Typo3 Installation Backup Script
+# TYPO3 Installation Backup Script
 # written by Oliver Salzburg
 
 set -o nounset
@@ -16,17 +16,18 @@ function showHelp() {
   Core:
   --help              Display this help and exit.
   --update            Tries to update the script to the latest version.
-  --base=PATH         The name of the base path where Typo3 should be 
+  --base=PATH         The name of the base path where TYPO3 should be 
                       installed. If no base is supplied, "typo3" is used.
   --export-config     Prints the default configuration of this script.
+  --extract-config    Extracts configuration parameters from TYPO3.
   
   Database:
-  --hostname=HOST     The name of the host where the Typo3 database is running.
-  --username=USER     The username to use when connecting to the Typo3
+  --hostname=HOST     The name of the host where the TYPO3 database is running.
+  --username=USER     The username to use when connecting to the TYPO3
                       database.
-  --password=PASSWORD The password to use when connecting to the Typo3
+  --password=PASSWORD The password to use when connecting to the TYPO3
                       database.
-  --database=DB       The name of the database in which Typo3 is stored.
+  --database=DB       The name of the database in which TYPO3 is stored.
 EOF
 }
 
@@ -37,16 +38,26 @@ function exportConfig() {
   sed -n "/#\ Script\ Configuration\ start/,/# Script Configuration end/p" "$0"
 }
 
+# Extract all known (database related) parameters from the TYPO3 configuration.
+function extractConfig() {
+  LOCALCONF="$BASE/typo3conf/localconf.php"
+  
+  echo HOST=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_host = ')[^']*(?=';)")
+  echo USER=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_username = ')[^']*(?=';)")
+  echo PASS=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_password = ')[^']*(?=';)")
+  echo DB=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db = ')[^']*(?=';)")
+}
+
 # Script Configuration start
-# The base directory where Typo3 is installed
+# The base directory where TYPO3 is installed
 BASE=typo3
-# The hostname of the MySQL server that Typo3 uses
+# The hostname of the MySQL server that TYPO3 uses
 HOST=localhost
 # The username used to connect to that MySQL server
 USER=*username*
 # The password for that user
 PASS=*password*
-# The name of the database in which Typo3 is stored
+# The name of the database in which TYPO3 is stored
 DB=typo3
 # Script Configuration end
 
@@ -114,6 +125,10 @@ for option in $*; do
       exportConfig
       exit 0
       ;;
+    --extract-config)
+      extractConfig
+      exit 0
+      ;;
     --hostname=*)
       HOST=$(echo $option | cut -d'=' -f2)
       ;;
@@ -174,7 +189,7 @@ fi
 # Filename for snapshot
 FILE=$BASE-$(date +%Y-%m-%d-%H-%M).tgz
 
-echo "Creating Typo3 backup '$FILE'..."
+echo "Creating TYPO3 backup '$FILE'..."
 
 # Create database dump
 echo -n "Creating database dump at $BASE/database.sql..."
@@ -191,7 +206,7 @@ echo "Done."
 
 
 # Create backup archive
-_statusMessage="Compressing Typo3 installation..."
+_statusMessage="Compressing TYPO3 installation..."
 echo -n $_statusMessage
 if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
   echo
