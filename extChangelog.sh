@@ -114,7 +114,15 @@ EOF
   exec /bin/bash updateScript.sh
 }
 
-# Read external configuration
+# Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
+BASE_CONFIG_FILENAME="typo3scripts.conf"
+if [[ -e "$BASE_CONFIG_FILENAME" && !( $# > 1 && "$1" != "--help" && "$1" != "-h" ) ]]; then
+echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
+  source $BASE_CONFIG_FILENAME
+  echo "Done."
+fi
+
+# Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
 if [[ -e "$CONFIG_FILENAME" && !( $# > 1 && "$1" != "--help" && "$1" != "-h" ) ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
