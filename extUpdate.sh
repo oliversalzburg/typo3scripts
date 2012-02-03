@@ -24,6 +24,7 @@ function showHelp() {
   Options:
   --extension=EXTKEY  The extension key of the extension that should be
                       operated on.
+  --changelog         Display the upload comments for updated extensions.
 
   Database:
   --hostname=HOST     The name of the host where the TYPO3 database is running.
@@ -73,6 +74,8 @@ PASS=*password*
 DB=typo3
 # The extension key for which to retrieve the changelog
 EXTENSION=
+# Should the upload comments be displayed for extensions that have updates available?
+DISPLAY_CHANGELOG=0
 # Script Configuration end
 
 # The base location from where to retrieve new versions of this script
@@ -117,7 +120,7 @@ EOF
 # Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 BASE_CONFIG_FILENAME="typo3scripts.conf"
 if [[ -e "$BASE_CONFIG_FILENAME" && !( $# > 1 && "$1" != "--help" && "$1" != "-h" ) ]]; then
-echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
+  echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
   source $BASE_CONFIG_FILENAME
   echo "Done."
 fi
@@ -166,6 +169,9 @@ for option in $*; do
     --extension=*)
       EXTENSION=$(echo $option | cut -d'=' -f2)
       ;;
+    --changelog)
+      DISPLAY_CHANGELOG=1
+      ;;
     *)
       EXTENSION=$option
       ;;
@@ -210,6 +216,11 @@ fi
 if [[ ! -r $BASE ]]; then
   echo "The base directory '$BASE' is not readable!"
   exit 1
+fi
+
+# Check if extChangelog.sh is required and available
+if [[ $DISPLAY_CHANGELOG == 1 && ! -e extChangelog.sh ]]; then
+  echo "Upload comments will NOT be displayed! To enable this feature, download extChangelog.sh from the typo3scripts project and place it in the same folder as $SELF."
 fi
 
 # Version number compare helper function
@@ -274,6 +285,10 @@ for _extDirectory in "$BASE/typo3conf/ext/"*; do
   
   if [[ $_versionsEqual != 0 ]]; then
     echo "New version of '$_extKey' available. Installed: $_installedVersion Latest: $_latestVersion"
+    if [[ $DISPLAY_CHANGELOG == 1 && -e extChangelog.sh ]]; then
+      ./extChangelog.sh --extension=$_extKey --first=$_installedVersion 2>/dev/null
+      echo
+    fi
   fi
 done
 

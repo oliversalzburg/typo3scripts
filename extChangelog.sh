@@ -24,6 +24,8 @@ function showHelp() {
   Options:
   --extension=EXTKEY  The extension key of the extension for which to retrieve
                       the changelog.
+  --first=VERSION     The first version that should be listed.
+  --last=VERSION      The last version that should be listed.
 
   Database:
   --hostname=HOST     The name of the host where the TYPO3 database is running.
@@ -55,8 +57,8 @@ function extractConfig() {
 # Check on minimal command line argument count
 REQUIRED_ARGUMENT_COUNT=1
 if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
-  echo "Insufficient command line arguments!"
-  echo "Use $0 --help to get additional information."
+  echo "Insufficient command line arguments!" >&2
+  echo "Use $0 --help to get additional information." >&2
   exit -1
 fi
 
@@ -73,6 +75,10 @@ PASS=*password*
 DB=typo3
 # The extension key for which to retrieve the changelog
 EXTENSION=
+# The first version to list
+VERSION_FIRST=
+# The last version to list
+VERSION_LAST=
 # Script Configuration end
 
 # The base location from where to retrieve new versions of this script
@@ -114,29 +120,37 @@ EOF
   exec /bin/bash updateScript.sh
 }
 
-# Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
-BASE_CONFIG_FILENAME="typo3scripts.conf"
-if [[ -e "$BASE_CONFIG_FILENAME" && !( $# > 1 && "$1" != "--help" && "$1" != "-h" ) ]]; then
-echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
-  source $BASE_CONFIG_FILENAME
-  echo "Done."
-fi
-
-# Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
-CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [[ -e "$CONFIG_FILENAME" && !( $# > 1 && "$1" != "--help" && "$1" != "-h" ) ]]; then
-  echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
-  source $CONFIG_FILENAME
-  echo "Done."
-fi
-
-# Read command line arguments (overwrites config file)
+# Make a quick run through the command line arguments to see if the user wants
+# to print the help. This saves us a lot of headache with respecting the order
+# in which configuration parameters have to be overwritten.
 for option in $*; do
   case "$option" in
     --help|-h)
       showHelp
       exit 0
       ;;
+  esac
+done
+
+# Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
+BASE_CONFIG_FILENAME="typo3scripts.conf"
+if [[ -e "$BASE_CONFIG_FILENAME" ]]; then
+  echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..." >&2
+  source $BASE_CONFIG_FILENAME
+  echo "Done." >&2
+fi
+
+# Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
+CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
+if [[ -e "$CONFIG_FILENAME" ]]; then
+  echo -n "Sourcing script configuration from $CONFIG_FILENAME..." >&2
+  source $CONFIG_FILENAME
+  echo "Done." >&2
+fi
+
+# Read command line arguments (overwrites config file)
+for option in $*; do
+  case "$option" in
     --update)
       runSelfUpdate
       ;;
@@ -166,6 +180,12 @@ for option in $*; do
     --extension=*)
       EXTENSION=$(echo $option | cut -d'=' -f2)
       ;;
+    --first=*)
+      VERSION_FIRST=$(echo $option | cut -d'=' -f2)
+      ;;
+    --last=*)
+      VERSION_LAST=$(echo $option | cut -d'=' -f2)
+      ;;
     *)
       EXTENSION=$option
       ;;
@@ -175,58 +195,145 @@ done
 # Check for dependencies
 function checkDependency() {
   if ! hash $1 2>&-; then
-    echo "Failed!"
+    echo "Failed!" >&2
     echo "This script requires '$1' but it can not be found. Aborting." >&2
     exit 1
   fi
 }
-echo -n "Checking dependencies..."
+echo -n "Checking dependencies..." >&2
 checkDependency mysql
 checkDependency sed
-echo "Succeeded."
+echo "Succeeded." >&2
 
 # Update check
 SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $1}')
 SUM_SELF=$(md5sum "$0" | awk '{print $1}')
 if [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
-  echo "NOTE: New version available!"
+  echo "NOTE: New version available!" >&2
 fi
 
 # Begin main operation
 
 # Check argument validity
 if [[ $EXTENSION == --* ]]; then
-  echo "The given extension key '$EXTENSION' looks like a command line parameter."
-  echo "Please use the --extension parameter when giving multiple arguments."
+  echo "The given extension key '$EXTENSION' looks like a command line parameter." >&2
+  echo "Please use the --extension parameter when giving multiple arguments." >&2
   exit 1
 fi
 
 # Does the base directory exist?
 if [[ ! -d $BASE ]]; then
-  echo "The base directory '$BASE' does not seem to exist!"
+  echo "The base directory '$BASE' does not seem to exist!" >&2
   exit 1
 fi
 # Is the base directory readable?
 if [[ ! -r $BASE ]]; then
-  echo "The base directory '$BASE' is not readable!"
+  echo "The base directory '$BASE' is not readable!" >&2
   exit 1
 fi
 
+# Version number compare helper function
+# Created by Dennis Williamson (http://stackoverflow.com/questions/4023830/bash-how-compare-two-strings-in-version-format)
+function compareVersions() {
+  if [[ $1 == $2 ]]
+  then
+    return 0
+  fi
+  local IFS=.
+  local i ver1=($1) ver2=($2)
+  # fill empty fields in ver1 with zeros
+  for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+  do
+    ver1[i]=0
+  done
+  for ((i=0; i<${#ver1[@]}; i++))
+  do
+    if [[ -z ${ver2[i]} ]]
+    then
+      # fill empty fields in ver2 with zeros
+      ver2[i]=0
+    fi
+    if ((10#${ver1[i]} > 10#${ver2[i]}))
+    then
+      return 1
+    fi
+    if ((10#${ver1[i]} < 10#${ver2[i]}))
+    then
+      return 2
+    fi
+  done
+  return 0
+}
+
 # Read upload comments from cached extensions data
-echo -n "Retrieving upload comment history..."
+echo -n "Retrieving upload comment history..." >&2
 set +e errexit
 _query="SELECT CONCAT(\`version\`,'\n',\`uploadcomment\`) FROM \`cache_extensions\` WHERE (\`extkey\` = '$EXTENSION');"
-_errorMessage=$(echo $_query | mysql --host=$HOST --user=$USER --pass=$PASS --database=$DB --batch --skip-column-names 2>&1 | sed 's/\\n/\n/g' > extChangelog.out)
+_errorMessage=$(echo $_query | mysql --host=$HOST --user=$USER --pass=$PASS --database=$DB --batch --skip-column-names 2>&1 | sed 's/\\n/|/g' > extChangelog.out)
 _status=$?
 set -e errexit
 if [[ 0 < $_status ]]; then
-  echo "Failed!"
-  echo "Error: $_errorMessage"
+  echo "Failed!" >&2
+  echo "Error: $_errorMessage" >&2
   exit 1
 fi
-echo "Done."
+echo "Done." >&2
 
-cat extChangelog.out
+while read _versionEntry; do
+  _versionString=$(echo $_versionEntry | cut --delimiter=\| --fields=1 -)
+  
+  # Check if lower limit for version listing is provided
+  if [[ $VERSION_FIRST != "" ]]; then
+  
+    set +e errexit
+    compareVersions $_versionString $VERSION_FIRST
+    _versionsEqual=$?
+    set -e errexit
+    
+    case $_versionsEqual in
+      0) 
+        # Versions equal
+        ;;
+      1) 
+        # This version comment is of a later version than the first we should list
+        ;;
+      2)
+        # This version comment is of an earlier version than the first we should list
+        continue
+        ;;
+    esac
+    
+  fi
+  
+  # Check if upper limit for version listing is provided
+  if [[ $VERSION_LAST != "" ]]; then
+  
+    set +e errexit
+    compareVersions $_versionString $VERSION_LAST
+    _versionsEqual=$?
+    set -e errexit
+    
+    case $_versionsEqual in
+      0) 
+        # Versions equal
+        ;;
+      1) 
+        # This version comment is of a later version than the first we should list
+        continue
+        ;;
+      2)
+        # This version comment is of an earlier version than the first we should list
+        ;;
+    esac
+    
+  fi
+  
+  echo $_versionString
+  _versionComment=$(echo $_versionEntry | cut --delimiter=\| --fields=2- -)
+  echo "  $_versionComment" | sed 's/|/\n  /g'
+  
+done < extChangelog.out
+
 rm -f extChangelog.out
 
 # vim:ts=2:sw=2:expandtab:
