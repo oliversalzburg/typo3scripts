@@ -16,7 +16,7 @@ function showHelp() {
   Core:
   --help            Display this help and exit.
   --update          Tries to update the script to the latest version.
-  --base=PATH       The name of the base path where TYPO3 should be installed.
+  --base=PATH       The name of the base path where TYPO3 is installed.
                     If no base is supplied, "typo3" is used.
   --export-config   Prints the default configuration of this script.
   --extract-config  Extracts configuration parameters from TYPO3.
