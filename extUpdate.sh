@@ -212,11 +212,69 @@ if [[ ! -r $BASE ]]; then
   exit 1
 fi
 
+# Version number compare helper function
+# Created by Dennis Williamson (http://stackoverflow.com/questions/4023830/bash-how-compare-two-strings-in-version-format)
+function compareVersions() {
+  if [[ $1 == $2 ]]
+  then
+    return 0
+  fi
+  local IFS=.
+  local i ver1=($1) ver2=($2)
+  # fill empty fields in ver1 with zeros
+  for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+  do
+    ver1[i]=0
+  done
+  for ((i=0; i<${#ver1[@]}; i++))
+  do
+    if [[ -z ${ver2[i]} ]]
+    then
+      # fill empty fields in ver2 with zeros
+      ver2[i]=0
+    fi
+    if ((10#${ver1[i]} > 10#${ver2[i]}))
+    then
+      return 1
+    fi
+    if ((10#${ver1[i]} < 10#${ver2[i]}))
+    then
+      return 2
+    fi
+  done
+  return 0
+}
+
+
 # Check versions on all installed extensions
-for _extDirectory in $BASE/typo3conf/ext/*; do
-  _extKey=$(basename $_extDirectory)
-  echo $_extKey
-  grep --perl-regexp "'version'\s*=>\s*'\d{1,3}\.\d{1,3}\.\d{1,3}'" "$_extDirectory/ext_emconf.php" | grep --perl-regexp --only-matching "\d{1,3}\.\d{1,3}\.\d{1,3}"
+for _extDirectory in "$BASE/typo3conf/ext/"*; do
+  _extKey=$(basename "$_extDirectory")
+  # Determine installed version from ext_emconf.php
+  _installedVersion=$(grep --perl-regexp "'version'\s*=>\s*'\d{1,3}\.\d{1,3}\.\d{1,3}'" "$_extDirectory/ext_emconf.php" | grep --perl-regexp --only-matching "\d{1,3}\.\d{1,3}\.\d{1,3}")
+  
+  # Get the latest known version from the cache in the database
+  set +e errexit
+  _query="SELECT \`version\` FROM \`cache_extensions\` WHERE (\`extkey\` = '$_extKey') ORDER BY \`intversion\` DESC LIMIT 1;"
+  _errorMessage=$(echo $_query | mysql --host=$HOST --user=$USER --pass=$PASS --database=$DB --batch --skip-column-names 2>&1 > extVersion.out)
+  _status=$?
+  _latestVersion=$(cat extVersion.out)
+  rm -f extVersion.out
+  set -e errexit
+  if [[ 0 < $_status ]]; then
+    echo "Failed!"
+    echo "Error: $_errorMessage"
+    exit 1
+  fi
+  
+  # Compare versions
+  set +e errexit
+  compareVersions $_installedVersion $_latestVersion
+  _versionsEqual=$?
+  set -e errexit
+  
+  if [[ $_versionsEqual != 0 ]]; then
+    echo "New version of '$_extKey' available. Installed: $_installedVersion Latest: $_latestVersion"
+  fi
 done
 
 # vim:ts=2:sw=2:expandtab:

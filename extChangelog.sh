@@ -212,7 +212,7 @@ if [[ ! -r $BASE ]]; then
   exit 1
 fi
 
-# Read cached extensions from database
+# Read upload comments from cached extensions data
 echo -n "Retrieving upload comment history..."
 set +e errexit
 _query="SELECT CONCAT(\`version\`,'\n',\`uploadcomment\`) FROM \`cache_extensions\` WHERE (\`extkey\` = '$EXTENSION');"
