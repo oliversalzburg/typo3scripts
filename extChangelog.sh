@@ -268,7 +268,7 @@ function compareVersions() {
 # Read upload comments from cached extensions data
 echo -n "Retrieving upload comment history..." >&2
 set +e errexit
-_query="SELECT CONCAT(\`version\`,'\n',\`uploadcomment\`) FROM \`cache_extensions\` WHERE (\`extkey\` = '$EXTENSION');"
+_query="SELECT CONCAT(\`version\`,'\n',\`lastuploaddate\`,'\n',\`uploadcomment\`) FROM \`cache_extensions\` WHERE (\`extkey\` = '$EXTENSION');"
 _errorMessage=$(echo $_query | mysql --host=$HOST --user=$USER --pass=$PASS --database=$DB --batch --skip-column-names 2>&1 | sed 's/\\n/|/g' > extChangelog.out)
 _status=$?
 set -e errexit
@@ -281,6 +281,7 @@ echo "Done." >&2
 
 while read _versionEntry; do
   _versionString=$(echo $_versionEntry | cut --delimiter=\| --fields=1 -)
+  _uploadDate=$(echo $_versionEntry | cut --delimiter=\| --fields=2 -)
   
   # Check if lower limit for version listing is provided
   if [[ $VERSION_FIRST != "" ]]; then
@@ -328,8 +329,8 @@ while read _versionEntry; do
     
   fi
   
-  echo $_versionString
-  _versionComment=$(echo $_versionEntry | cut --delimiter=\| --fields=2- -)
+  echo $_versionString \($(date --date @$_uploadDate "+%Y-%m-%d %T")\)
+  _versionComment=$(echo $_versionEntry | cut --delimiter=\| --fields=3- -)
   echo "  $_versionComment" | sed 's/|/\n  /g'
   
 done < extChangelog.out
