@@ -299,7 +299,7 @@ while read _versionEntry; do
         # This version comment is of a later version than the first we should list
         ;;
       2)
-        # This version comment is of an earlier version than the first we should list
+        # This version comment is of an earlier version than the first we should list, skip it
         continue
         ;;
     esac
@@ -319,11 +319,11 @@ while read _versionEntry; do
         # Versions equal
         ;;
       1) 
-        # This version comment is of a later version than the first we should list
+        # This version comment is of a later version than the last we should list, skip it
         continue
         ;;
       2)
-        # This version comment is of an earlier version than the first we should list
+        # This version comment is of an earlier version than the last we should list
         ;;
     esac
     

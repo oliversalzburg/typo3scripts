@@ -56,8 +56,8 @@ function extractConfig() {
 # Check on minimal command line argument count
 REQUIRED_ARGUMENT_COUNT=0
 if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
-  echo "Insufficient command line arguments!"
-  echo "Use $0 --help to get additional information."
+  echo "Insufficient command line arguments!" >&2
+  echo "Use $0 --help to get additional information." >&2
   exit -1
 fi
 
@@ -120,17 +120,17 @@ EOF
 # Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 BASE_CONFIG_FILENAME="typo3scripts.conf"
 if [[ -e "$BASE_CONFIG_FILENAME" && !( $# > 1 && "$1" != "--help" && "$1" != "-h" ) ]]; then
-  echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
+  echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..." >&2
   source $BASE_CONFIG_FILENAME
-  echo "Done."
+  echo "Done." >&2
 fi
 
 # Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
 if [[ -e "$CONFIG_FILENAME" && !( $# > 1 && "$1" != "--help" && "$1" != "-h" ) ]]; then
-  echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
+  echo -n "Sourcing script configuration from $CONFIG_FILENAME..." >&2
   source $CONFIG_FILENAME
-  echo "Done."
+  echo "Done." >&2
 fi
 
 # Read command line arguments (overwrites config file)
@@ -181,46 +181,46 @@ done
 # Check for dependencies
 function checkDependency() {
   if ! hash $1 2>&-; then
-    echo "Failed!"
+    echo "Failed!" >&2
     echo "This script requires '$1' but it can not be found. Aborting." >&2
     exit 1
   fi
 }
-echo -n "Checking dependencies..."
+echo -n "Checking dependencies..." >&2
 checkDependency mysql
 checkDependency sed
-echo "Succeeded."
+echo "Succeeded." >&2
 
 # Update check
 SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $1}')
 SUM_SELF=$(md5sum "$0" | awk '{print $1}')
 if [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
-  echo "NOTE: New version available!"
+  echo "NOTE: New version available!" >&2
 fi
 
 # Begin main operation
 
 # Check argument validity
 if [[ $EXTENSION == --* ]]; then
-  echo "The given extension key '$EXTENSION' looks like a command line parameter."
-  echo "Please use the --extension parameter when giving multiple arguments."
+  echo "The given extension key '$EXTENSION' looks like a command line parameter." >&2
+  echo "Please use the --extension parameter when giving multiple arguments." >&2
   exit 1
 fi
 
 # Does the base directory exist?
 if [[ ! -d $BASE ]]; then
-  echo "The base directory '$BASE' does not seem to exist!"
+  echo "The base directory '$BASE' does not seem to exist!" >&2
   exit 1
 fi
 # Is the base directory readable?
 if [[ ! -r $BASE ]]; then
-  echo "The base directory '$BASE' is not readable!"
+  echo "The base directory '$BASE' is not readable!" >&2
   exit 1
 fi
 
 # Check if extChangelog.sh is required and available
 if [[ $DISPLAY_CHANGELOG == 1 && ! -e extChangelog.sh ]]; then
-  echo "Upload comments will NOT be displayed! To enable this feature, download extChangelog.sh from the typo3scripts project and place it in the same folder as $SELF."
+  echo "Upload comments will NOT be displayed! To enable this feature, download extChangelog.sh from the typo3scripts project and place it in the same folder as $SELF." >&2
 fi
 
 # Version number compare helper function
@@ -256,6 +256,22 @@ function compareVersions() {
   return 0
 }
 
+# Check if extension cache has been updated recently
+_extensionCacheFile="$BASE/typo3temp/1.extensions.xml.gz"
+if [[ ! -e $_extensionCacheFile ]]; then
+  echo "Unable to find extension cache '$_extensionCacheFile'. Either you are using a repository with a non-standard ID (not TYPO3.org) or you have never loaded an extension list." >&2
+else
+  _lastUpdateTime=$(date --reference=$_extensionCacheFile +%s)
+  _currentTime=$(date +%s)
+  _lastUpdatePeriod=$(( $_currentTime - $_lastUpdateTime ))
+  # Longest period the cache can be left not update without extUpdate.sh complaining
+  # By default, 172800 seconds = 48 hours
+  MAX_CACHE_UPDATE_DELAY=172800
+  if [[ "$_lastUpdatePeriod" -ge "$MAX_CACHE_UPDATE_DELAY" ]]; then
+    echo "WARNING: Did you forget to update your extension cache? Last update: $(date --date @$_lastUpdateTime "+%Y-%m-%d %T")" >&2
+  fi
+  
+fi
 
 # Check versions on all installed extensions
 for _extDirectory in "$BASE/typo3conf/ext/"*; do
@@ -272,8 +288,8 @@ for _extDirectory in "$BASE/typo3conf/ext/"*; do
   rm -f extVersion.out
   set -e errexit
   if [[ 0 < $_status ]]; then
-    echo "Failed!"
-    echo "Error: $_errorMessage"
+    echo "Failed!" >&2
+    echo "Error: $_errorMessage" >&2
     exit 1
   fi
   
