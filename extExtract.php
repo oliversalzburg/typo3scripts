@@ -51,8 +51,8 @@ function extractConfig() {
 
 define( "REQUIRED_ARGUMENT_COUNT", 0 );
 if( $argc < REQUIRED_ARGUMENT_COUNT ) {
-  file_put_contents( "php://stderr", "Insufficient command line arguments!" );
-  file_put_contents( "php://stderr", "Use INVNAME --help to get additional information." );
+  file_put_contents( "php://stderr", "Insufficient command line arguments!\n" );
+  file_put_contents( "php://stderr", "Use INVNAME --help to get additional information.\n" );
   exit( 1 );
 }
 
@@ -120,9 +120,14 @@ EOS;
 
 // Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 define( "BASE_CONFIG_FILENAME", "typo3scripts.conf" );
+if( file_exists( BASE_CONFIG_FILENAME ) ) {
+  file_put_contents( "php://stderr", "Sourcing script configuration from " . BASE_CONFIG_FILENAME . "..." );
+  $_baseConfig = file_get_contents( BASE_CONFIG_FILENAME );
+  $_baseConfigFixed = preg_replace( "/^(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_baseConfig );
+  eval( $_baseConfigFixed );
+  file_put_contents( "php://stderr", "Done.\n" );
+}
 
-exportConfig();
-
-//echo $BASE;
+echo $PASS;
 # vim:ts=2:sw=2:expandtab:
 ?>
