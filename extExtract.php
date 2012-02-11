@@ -154,7 +154,6 @@ foreach( $argv as $_option ) {
 
   if( 0 === strpos( $_option, "--update" ) ) {
     runSelfUpdate();
-    ;;
 
   } else if( 0 === strpos( $_option, "--base=" ) ) {
     $BASE = substr( $_option, strpos( $_option, "=" ) + 1 );
