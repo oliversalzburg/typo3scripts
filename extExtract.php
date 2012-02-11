@@ -73,8 +73,7 @@ $EXTENSION="";
 # Script Configuration end
 
 // The base location from where to retrieve new versions of this script
-#define( "UPDATE_BASE", "http://typo3scripts.googlecode.com/svn/trunk" );
-define( "UPDATE_BASE", "http://typo3scripts.googlecode.com/svn/branches/dev" );
+define( "UPDATE_BASE", "http://typo3scripts.googlecode.com/svn/trunk" );
 
 /**
  * Self-update
@@ -151,21 +150,64 @@ if( file_exists( CONFIG_FILENAME ) ) {
 }
 
 foreach( $argv as $_option ) {
+  if( $_option === $argv[ 0 ] ) continue;
+
   if( 0 === strpos( $_option, "--update" ) ) {
     runSelfUpdate();
     ;;
 
   } else if( 0 === strpos( $_option, "--base=" ) ) {
-    $BASE=substr( $_option, strpos( $_option, "=" ) + 1 );
+    $BASE = substr( $_option, strpos( $_option, "=" ) + 1 );
 
   } else if( 0 === strpos( $_option, "--export-config" ) ) {
     exportConfig();
     exit( 0 );
 
+  } else if( 0 === strpos( $_option, "--extract-config" ) ) {
+    extractConfig();
+    exit( 0 );
+
+  } else if( 0 === strpos( $_option, "--extension=" ) ) {
+    $EXTENSION = substr( $_option, strpos( $_option, "=" ) + 1 );
+
+  } else {
+    $EXTENSION = $_option;
+  }
+}
+
+// Update check
+$_sumLatest = file_get_contents( UPDATE_BASE . "/versions" );
+$_isListed = preg_match( "/^(?P<sum>[0-9a-zA-Z]{32})\s*" . SELF ."/ms", $_sumLatest, $_ownSumLatest );
+if( !$_isListed ) {
+  file_put_contents( "php://stderr", "No update information is yet available for " . SELF . ".\n" );
+} else {
+  file_put_contents( "php://stderr", "Update checking isn't yet implemented for " . SELF . ".\n" );
+}
+
+// Begin main operation
+
+// Check argument validity
+if( 0 === strpos( $EXTENSION, "--" ) ) {
+  echo "The given extension key '$EXTENSION' looks like a command line parameter.\n";
+  echo "Please use the --extension parameter when giving multiple arguments.\n";
+  exit( 1 );
+}
+
+// Is the provided extension not just an extension key, but a filename?
+if( file_exists( $EXTENSION ) ) {
+  file_put_contents( "php://stderr", "Extracting file '$EXTENSION'..." );
+} else {
+  // It must be a reference to an extension installed in the local TYPO3 installation.
+  if( file_exists( "$BASE/typo3conf/ext/$EXTENSION" ) ) {
+    file_put_contents( "php://stderr", "Retrieving original extension file for '$BASE/typo3conf/ext/$EXTENSION'..." );
+
+  } else {
+    file_put_contents( "php://stderr", "Unable to find extension '$EXTENSION'.\n" );
+    file_put_contents( "php://stderr", "Directory requested: '$BASE/typo3conf/ext/$EXTENSION'\n" );
+
   }
 }
 
 
-echo $BASE;
 # vim:ts=2:sw=2:expandtab:
 ?>
