@@ -113,7 +113,8 @@ else
 fi
 EOS;
 
-  echo $_updateScript;
+  echo "Inserting update process...";
+  pcntl_exec( "/bin/bash updateScript.sh" );
 }
 
 #showHelp( $argv[ 0 ] );
