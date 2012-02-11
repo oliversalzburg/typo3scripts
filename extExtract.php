@@ -71,13 +71,16 @@ $EXTENSION="";
 # Script Configuration end
 
 // The base location from where to retrieve new versions of this script
-define( "UPDATE_BASE", "http://typo3scripts.googlecode.com/svn/trunk" );
+#define( "UPDATE_BASE", "http://typo3scripts.googlecode.com/svn/trunk" );
+define( "UPDATE_BASE", "http://typo3scripts.googlecode.com/svn/branches/dev" );
 
 /**
  * Self-update
  */
 function runSelfUpdate() {
   echo "Performing self-update...\n";
+
+  $_tempFileName = INVNAME . ".tmp";
 
   // Download new version
   echo "Downloading latest version...";
@@ -87,6 +90,30 @@ function runSelfUpdate() {
     echo "File requested: " . UPDATE_BASE . "/" . SELF . "\n";
     exit( 1 );
   }
+  file_put_contents( $_tempFileName, $_fileContents );
+  echo "Done.\n";
+
+  // Copy over modes from old version
+  $_octalMode = fileperms( INVNAME );
+  if( FALSE == chmod( $_tempFileName, $_octalMode ) ) {
+    echo "Failed: Error while trying to set mode on $_tempFileName.\n";
+    exit( 1 );
+  }
+  
+  // Spawn update script
+  $_name = INVNAME;
+  $_updateScript = <<<EOS
+#!/bin/bash
+# Overwrite old file with new
+if mv "$_tempFileName" "$_name"; then
+  echo "Done. Update complete."
+  rm -- $0
+else
+  echo "Failed!"
+fi
+EOS;
+
+  echo $_updateScript;
 }
 
 #showHelp( $argv[ 0 ] );
