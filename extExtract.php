@@ -50,8 +50,8 @@ function extractConfig() {
   preg_match_all( "/(?<=typo_db_host = ')[^']*(?=';)/", $_configFileContent, $_hostMatch );
 }
 
-define( "REQUIRED_ARGUMENT_COUNT", 0 );
-if( $argc < REQUIRED_ARGUMENT_COUNT ) {
+define( "REQUIRED_ARGUMENT_COUNT", 1 );
+if( $argc <= REQUIRED_ARGUMENT_COUNT ) {
   file_put_contents( "php://stderr", "Insufficient command line arguments!\n" );
   file_put_contents( "php://stderr", "Use INVNAME --help to get additional information.\n" );
   exit( 1 );
@@ -230,14 +230,45 @@ if( file_exists( $_extensionFile ) ) {
 
     } else {
       file_put_contents( "php://stderr", "Error: Unable to unserialize extension! (Shouldn't happen)\n" );
+      exit( 1 );
     }
   } else {
     file_put_contents( "php://stderr", "Error: MD5 mismatch. Extension file may be corrupt!\n" );
+    exit( 1 );
   }
 
 } else {
   file_put_contents( "php://stderr", "Error: Unable to open '$_extensionFile'!\n" );
+  exit( 1 );
 }
+
+function printArray( $array, $indent, $nameIndent ) {
+  foreach( $array as $name => $value ) {
+    echo $indent . $name . substr( $nameIndent, 0, -strlen( $name ) ) . " = ";
+    if( is_array( $value ) ) {
+      echo "\n";
+
+      $_maxValueLength = 0;
+      foreach( $value as $string => $_ignoredValue ) {
+        if( strlen( $string ) > $_maxValueLength ) {
+          $_maxValueLength = strlen( $string );
+        }
+      }
+      printArray( $value, $indent . "  ", str_repeat( " ", $_maxValueLength  ) );
+
+    } else if( is_int( $value ) ) {
+      echo $value;
+
+    } else if( is_string( $value ) ) {
+      $_stringValue = quoted_printable_encode( $value );
+      $_stringValueLength = strlen( $_stringValue );
+      echo ( $_stringValueLength > 60 ) ? "String[$_stringValueLength]" : $_stringValue;
+    }
+    echo "\n";
+  }
+}
+
+printArray( $_extension, "", "" );
 
 
 # vim:ts=2:sw=2:expandtab:
