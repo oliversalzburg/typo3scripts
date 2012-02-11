@@ -34,7 +34,8 @@ EOS;
 function exportConfig() {
   $config = "";
   preg_match_all( "/# Script Configuration start.+?# Script Configuration end/ms", file_get_contents( INVNAME ), $config );
-  echo $config[ 0 ][ 1 ];
+  $_configuration = preg_replace( "/\\$/", "", $config[ 0 ][ 1 ] );
+  echo $_configuration;
 }
 
 function extractConfig() {
@@ -117,9 +118,11 @@ EOS;
   pcntl_exec( "/bin/bash updateScript.sh" );
 }
 
-#showHelp( $argv[ 0 ] );
-#exportConfig();
-runSelfUpdate();
+// Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
+define( "BASE_CONFIG_FILENAME", "typo3scripts.conf" );
 
+exportConfig();
+
+//echo $BASE;
 # vim:ts=2:sw=2:expandtab:
 ?>
