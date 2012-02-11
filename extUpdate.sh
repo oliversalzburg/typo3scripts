@@ -119,9 +119,21 @@ EOF
   exec /bin/bash updateScript.sh
 }
 
+# Make a quick run through the command line arguments to see if the user wants
+# to print the help. This saves us a lot of headache with respecting the order
+# in which configuration parameters have to be overwritten.
+for option in $*; do
+  case "$option" in
+    --help|-h)
+      showHelp
+      exit 0
+      ;;
+  esac
+done
+
 # Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 BASE_CONFIG_FILENAME="typo3scripts.conf"
-if [[ -e "$BASE_CONFIG_FILENAME" && !( $# > 1 && "$1" != "--help" && "$1" != "-h" ) ]]; then
+if [[ -e "$BASE_CONFIG_FILENAME" ]]; then
   echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..." >&2
   source $BASE_CONFIG_FILENAME
   echo "Done." >&2
@@ -129,7 +141,7 @@ fi
 
 # Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [[ -e "$CONFIG_FILENAME" && !( $# > 1 && "$1" != "--help" && "$1" != "-h" ) ]]; then
+if [[ -e "$CONFIG_FILENAME" ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..." >&2
   source $CONFIG_FILENAME
   echo "Done." >&2
@@ -138,10 +150,6 @@ fi
 # Read command line arguments (overwrites config file)
 for option in $*; do
   case "$option" in
-    --help|-h)
-      showHelp
-      exit 0
-      ;;
     --update)
       runSelfUpdate
       ;;
