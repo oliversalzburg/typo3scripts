@@ -34,7 +34,7 @@ EOS;
 function exportConfig() {
   $config = "";
   preg_match_all( "/# Script Configuration start.+?# Script Configuration end/ms", file_get_contents( INVNAME ), $config );
-  $_configuration = preg_replace( "/\\$/", "", $config[ 0 ][ 1 ] );
+  $_configuration = preg_replace( "/\\$(?P<name>[^=]+)\s*=\s*\"(?P<value>[^\"]*)\";/", "\\1=\\2", $config[ 0 ][ 1 ] );
   echo $_configuration;
 }
 
@@ -57,17 +57,17 @@ if( $argc < REQUIRED_ARGUMENT_COUNT ) {
 }
 
 # Script Configuration start
-// The base directory where Typo3 is installed
+# The base directory where Typo3 is installed
 $BASE="typo3";
-// The hostname of the MySQL server that Typo3 uses
+# The hostname of the MySQL server that Typo3 uses
 $HOST="localhost";
-// The username used to connect to that MySQL server
+# The username used to connect to that MySQL server
 $USER="*username*";
-// The password for that user
+# The password for that user
 $PASS="*password*";
-// The name of the database in which Typo3 is stored
+# The name of the database in which Typo3 is stored
 $DB="typo3";
-// The extension key for which to retrieve the changelog
+# The extension key for which to retrieve the changelog
 $EXTENSION="";
 # Script Configuration end
 
@@ -115,7 +115,7 @@ fi
 EOS;
 
   echo "Inserting update process...";
-  pcntl_exec( "/bin/bash updateScript.sh" );
+  pcntl_exec( "updateScript.sh" );
 }
 
 // Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
@@ -138,7 +138,22 @@ if( file_exists( CONFIG_FILENAME ) ) {
   file_put_contents( "php://stderr", "Done.\n" );
 }
 
+foreach( $argv as $_option ) {
+  if( 0 === strpos( $_option, "--update" ) ) {
+    runSelfUpdate();
+    ;;
 
-echo $PASS;
+  } else if( 0 === strpos( $_option, "--base=" ) ) {
+    $BASE=substr( $_option, strpos( $_option, "=" ) + 1 );
+
+  } else if( 0 === strpos( $_option, "--export-config" ) ) {
+    exportConfig();
+    exit( 0 );
+
+  }
+}
+
+
+echo $BASE;
 # vim:ts=2:sw=2:expandtab:
 ?>
