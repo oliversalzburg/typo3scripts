@@ -194,18 +194,50 @@ if( 0 === strpos( $EXTENSION, "--" ) ) {
 }
 
 // Is the provided extension not just an extension key, but a filename?
-if( file_exists( $EXTENSION ) ) {
-  file_put_contents( "php://stderr", "Extracting file '$EXTENSION'..." );
-} else {
+$_extensionFile = $EXTENSION;
+if( !file_exists( $_extensionFile ) ) {
   // It must be a reference to an extension installed in the local TYPO3 installation.
   if( file_exists( "$BASE/typo3conf/ext/$EXTENSION" ) ) {
     file_put_contents( "php://stderr", "Retrieving original extension file for '$BASE/typo3conf/ext/$EXTENSION'..." );
-
+    $_extensionFile = "downloaded.temp";
+    
   } else {
     file_put_contents( "php://stderr", "Unable to find extension '$EXTENSION'.\n" );
     file_put_contents( "php://stderr", "Directory requested: '$BASE/typo3conf/ext/$EXTENSION'\n" );
-
+    exit( 1 );
   }
+}
+
+if( file_exists( $_extensionFile ) ) {
+  file_put_contents( "php://stderr", "Extracting file '$_extensionFile'..." );
+
+  $_fileContents = file_get_contents( $_extensionFile );
+  $_fileParts = explode( ":", $_fileContents, 3 );
+  $_extensionContent = "";
+  if( "gzcompress" == $_fileParts[ 1 ] ) {
+    if( function_exists( "gzuncompress" ) ) {
+      $_extensionContent = gzuncompress( $_fileParts[ 2 ] );
+
+    } else {
+      file_put_contents( "php://stderr", "Error: Unable to decode extension. gzuncompress() is unavailable.\n" );
+      exit( 1 );
+    }
+  }
+  $_extension = null;
+  if( md5( $_extensionContent ) == $_fileParts[ 0 ] ) {
+    $_extension = unserialize( $_extensionContent );
+    if( is_array( $_extension ) ) {
+      file_put_contents( "php://stderr", "Extension is OK\n" );
+
+    } else {
+      file_put_contents( "php://stderr", "Error: Unable to unserialize extension! (Shouldn't happen)\n" );
+    }
+  } else {
+    file_put_contents( "php://stderr", "Error: MD5 mismatch. Extension file may be corrupt!\n" );
+  }
+
+} else {
+  file_put_contents( "php://stderr", "Error: Unable to open '$_extensionFile'!\n" );
 }
 
 
