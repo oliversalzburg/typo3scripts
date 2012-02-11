@@ -18,13 +18,14 @@ function showHelp( $name ) {
   --help              Display this help and exit.
   --update            Tries to update the script to the latest version.
   --base=PATH         The name of the base path where Typo3 is
-                    installed. If no base is supplied, "typo3" is used.
+                      installed. If no base is supplied, "typo3" is used.
   --export-config     Prints the default configuration of this script.
   --extract-config    Extracts configuration parameters from TYPO3.
   
   Options:
   --extension=EXTKEY  The extension key of the extension that should be
                       operated on.
+
 EOS;
 }
 
@@ -116,6 +117,17 @@ EOS;
 
   echo "Inserting update process...";
   pcntl_exec( "updateScript.sh" );
+}
+
+# Make a quick run through the command line arguments to see if the user wants
+# to print the help. This saves us a lot of headache with respecting the order
+# in which configuration parameters have to be overwritten.
+foreach( $argv as $_option ) {
+  if( 0 === strpos( $_option, "--help" ) || 0 === strpos( $_option, "-h" ) ) {
+    showHelp( $argv[ 0 ] );
+    exit( 0 )
+    ;;
+  }
 }
 
 // Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
