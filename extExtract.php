@@ -128,6 +128,17 @@ if( file_exists( BASE_CONFIG_FILENAME ) ) {
   file_put_contents( "php://stderr", "Done.\n" );
 }
 
+// Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
+define( "CONFIG_FILENAME", substr( SELF, 0, -4 ) . ".conf" );
+if( file_exists( CONFIG_FILENAME ) ) {
+  file_put_contents( "php://stderr", "Sourcing script configuration from " . CONFIG_FILENAME . "..." );
+  $_config = file_get_contents( CONFIG_FILENAME );
+  $_configFixed = preg_replace( "/^(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_config );
+  eval( $_configFixed );
+  file_put_contents( "php://stderr", "Done.\n" );
+}
+
+
 echo $PASS;
 # vim:ts=2:sw=2:expandtab:
 ?>
