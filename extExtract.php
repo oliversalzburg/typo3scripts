@@ -25,6 +25,10 @@ function showHelp( $name ) {
   Options:
   --extension=EXTKEY     The extension key of the extension that should be
                          operated on.
+  --dump                 Prints out a dump of the data structure of the
+                         extension file.
+  --extract              Forces the extraction process even if other commands
+                         were invoked.
   --output-dir=DIRECTORY The DIRECTORY to where the extension should be
                          extracted.
 
@@ -74,6 +78,10 @@ $DB="typo3";
 $EXTENSION="";
 # The directory to where the extension should be extracted.
 $OUTPUTDIR="";
+# Should the data structure of the extension be printed?
+$DUMP="false";
+# Should the extraction process be skipped?
+$EXTRACT="true";
 # Script Configuration end
 
 // The base location from where to retrieve new versions of this script
@@ -172,7 +180,14 @@ foreach( $argv as $_option ) {
 
   } else if( 0 === strpos( $_option, "--extension=" ) ) {
     $EXTENSION = substr( $_option, strpos( $_option, "=" ) + 1 );
-
+    
+  } else if( 0 === strpos( $_option, "--dump" ) ) {
+    $DUMP    = "true";
+    $EXTRACT = "false";
+  
+  } else if( 0 === strpos( $_option, "--extract" ) ) {
+    $EXTRACT = "true";
+    
   } else if( 0 === strpos( $_option, "--output-dir=" ) ) {
     $OUTPUTDIR = substr( $_option, strpos( $_option, "=" ) + 1 );
 
@@ -214,53 +229,58 @@ if( !file_exists( $_extensionFile ) ) {
   }
 }
 
-if( file_exists( $_extensionFile ) ) {
-  file_put_contents( "php://stderr", "Extracting file '$_extensionFile'..." );
+// If no output directory is yet defined, use the extension filename as a base
+if( 0 === strlen( $OUTPUTDIR ) ) {
+  $OUTPUTDIR = $_extensionFile . "-extracted";
+}
 
-  $_fileContents = file_get_contents( $_extensionFile );
-  $_fileParts = explode( ":", $_fileContents, 3 );
-  $_extensionContent = "";
-  if( "gzcompress" == $_fileParts[ 1 ] ) {
-    if( function_exists( "gzuncompress" ) ) {
-      $_extensionContent = gzuncompress( $_fileParts[ 2 ] );
-
-    } else {
-      file_put_contents( "php://stderr", "Error: Unable to decode extension. gzuncompress() is unavailable.\n" );
-      exit( 1 );
-    }
-  }
-  $_extension = null;
-  if( md5( $_extensionContent ) == $_fileParts[ 0 ] ) {
-    $_extension = unserialize( $_extensionContent );
-    if( is_array( $_extension ) ) {
-      file_put_contents( "php://stderr", "Extension is OK\n" );
-
-    } else {
-      file_put_contents( "php://stderr", "Error: Unable to unserialize extension! (Shouldn't happen)\n" );
-      exit( 1 );
-    }
-  } else {
-    file_put_contents( "php://stderr", "Error: MD5 mismatch. Extension file may be corrupt!\n" );
-    exit( 1 );
-  }
-
-} else {
-  file_put_contents( "php://stderr", "Error: Unable to open '$_extensionFile'!\n" );
+// Don't overwrite existing data!
+if( is_dir( $OUTPUTDIR ) ) {
+  file_put_contents( "php://stderr", "Error: The target directory '$OUTPUTDIR' already exists.\n" );
   exit( 1 );
 }
 
-foreach( $_extension[ "FILES" ] as $_filename => $_file ) {
-  $_directoryName = dirname( $_file[ "name" ] );
-  if( "." != $_directoryName ) {
-    $_fullPathName = $OUTPUTDIR . "/" . $_directoryName;
-    if( !file_exists( $_fullPathName  ) ) {
-     mkdir( $_fullPathName, 0700, true );
-   }
+/**
+ * Extracts extension array from extension file.
+ */
+function extractExtensionData( $extensionFile ) {
+  if( file_exists( $extensionFile ) ) {
+    $_fileContents = file_get_contents( $extensionFile );
+    $_fileParts = explode( ":", $_fileContents, 3 );
+    $_extensionContent = "";
+    if( "gzcompress" == $_fileParts[ 1 ] ) {
+      if( function_exists( "gzuncompress" ) ) {
+        $_extensionContent = gzuncompress( $_fileParts[ 2 ] );
+  
+      } else {
+        file_put_contents( "php://stderr", "Error: Unable to decode extension. gzuncompress() is unavailable.\n" );
+        exit( 1 );
+      }
+    }
+    $_extension = null;
+    if( md5( $_extensionContent ) == $_fileParts[ 0 ] ) {
+      $_extension = unserialize( $_extensionContent );
+      if( is_array( $_extension ) ) {
+        return $_extension;
+        
+      } else {
+        file_put_contents( "php://stderr", "Error: Unable to unserialize extension! (Shouldn't happen)\n" );
+        exit( 1 );
+      }
+    } else {
+      file_put_contents( "php://stderr", "Error: MD5 mismatch. Extension file may be corrupt!\n" );
+      exit( 1 );
+    }
+  
+  } else {
+    file_put_contents( "php://stderr", "Error: Unable to open '$_extensionFile'!\n" );
+    exit( 1 );
   }
-  $_fullFileName = $OUTPUTDIR . "/" . $_file[ "name" ];
-  file_put_contents( $_fullFileName, $_file[ "content" ] );
 }
 
+/**
+ * Dump the contents of a PHP array and apply some pretty-printing
+ */
 function printArray( $array, $indent, $nameIndent ) {
   foreach( $array as $name => $value ) {
     echo $indent . $name . substr( $nameIndent, 0, -strlen( $name ) ) . " = ";
@@ -287,7 +307,38 @@ function printArray( $array, $indent, $nameIndent ) {
   }
 }
 
-//printArray( $_extension, "", "" );
+file_put_contents( "php://stderr", "Extracting file '$_extensionFile'..." );
+$_extension = extractExtensionData( $_extensionFile );
+
+// Dump data structure first (if requested).
+// $DUMP is a string due to configuration file interoperability concerns
+if( $DUMP === "true" ) {
+  printArray( $_extension, "", "" );
+}
+
+if( $EXTRACT === "true" ) {
+  // Extract contents
+  foreach( $_extension[ "FILES" ] as $_filename => $_file ) {
+    $_directoryName = dirname( $_file[ "name" ] );
+  
+    $_fullPathName = $OUTPUTDIR . "/" . $_directoryName;
+    // is_dir() and mkdir() seem highly unreliable in their return values,
+    // so we must ignore failures on mkdir() and have to catch issues later.
+    if( FALSE === is_dir( $_fullPathName ) ) {
+      @mkdir( $_fullPathName, 0700, true );
+    }
+    
+    $_fullFileName = $OUTPUTDIR . "/" . $_file[ "name" ];
+    if( FALSE === file_put_contents( $_fullFileName, $_file[ "content" ] ) ) {
+      file_put_contents( "php://stderr", "Error: Failed to write file '$_fullFileName'.\n" );
+    }
+  }
+  file_put_contents( "php://stderr", "Done.\n" );
+  
+} else {
+  file_put_contents( "php://stderr", "Skipped.\n" );
+}
+
 
 
 # vim:ts=2:sw=2:expandtab:
