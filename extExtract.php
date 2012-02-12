@@ -221,6 +221,28 @@ if( 0 === strpos( $EXTENSION, "--" ) ) {
   exit( 1 );
 }
 
+/**
+ * Downloads an extension from the TYPO3 extension repository
+ */
+function downloadExtension( $_extKey, $_version ) {
+  $_firstLetter  = substr( $_extKey, 0, 1 );
+  $_secondLetter = substr( $_extKey, 1, 1 );
+  $_t3xName      = $_extKey . "_" . $_version . ".t3x";
+  $_extensionUrl = "http://typo3.org/fileadmin/ter/" . $_firstLetter . "/" . $_secondLetter . "/" . $_t3xName;
+  
+  $_extensionData = @file_get_contents( $_extensionUrl );
+  if( FALSE === $_extensionData ) {
+    file_put_contents( "php://stderr", "Error: Could not retrieve extension file.\n" );
+    file_put_contents( "php://stderr", "File requested: $_extensionUrl\n" );
+    exit( 1 );
+  }
+  $_tempFileName  = $_t3xName . ".temp";
+  file_put_contents( $_tempFileName, $_extensionData );
+  register_shutdown_function( "cleanUpTempFile", &$_tempFileName );
+  
+  return $_tempFileName;
+}
+
 function cleanUpTempFile( &$_tempFileName ) {
   unlink( $_tempFileName );
 }
@@ -245,15 +267,7 @@ if( !file_exists( $_extensionFile ) ) {
     $_installedVersion = $_extensionConfiguration[ "version" ];
     file_put_contents( "php://stderr", "$_installedVersion..." );
     
-    $_firstLetter  = substr( $EXTENSION, 0, 1 );
-    $_secondLetter = substr( $EXTENSION, 1, 1 );
-    $_t3xName      = $EXTENSION . "_" . $_installedVersion . ".t3x";
-    $_extensionUrl = "http://typo3.org/fileadmin/ter/" . $_firstLetter . "/" . $_secondLetter . "/" . $_t3xName;
-    
-    $_extensionData = file_get_contents( $_extensionUrl );
-    $_tempFileName  = $_t3xName . ".temp";
-    file_put_contents( $_tempFileName, $_extensionData );
-    register_shutdown_function( "cleanUpTempFile", &$_tempFileName );
+    $_tempFileName = downloadExtension( $EXTENSION, $_installedVersion );
     
     file_put_contents( "php://stderr", "Done.\n" );
     
@@ -261,21 +275,11 @@ if( !file_exists( $_extensionFile ) ) {
     
   } else if( "" != $FORCE_VERSION ) {
     // The user is looking for a specific version of an extension. Retrieve it.
-    file_put_contents( "php://stderr", "Retrieving original extension file for '$EXTENSION'..." );
+    file_put_contents( "php://stderr", "Retrieving original extension file for '$EXTENSION' " );
     
-    $_firstLetter  = substr( $EXTENSION, 0, 1 );
-    $_secondLetter = substr( $EXTENSION, 1, 1 );
-    $_t3xName      = $EXTENSION . "_" . $FORCE_VERSION . ".t3x";
-    $_extensionUrl = "http://typo3.org/fileadmin/ter/" . $_firstLetter . "/" . $_secondLetter . "/" . $_t3xName;
+    file_put_contents( "php://stderr", "$FORCE_VERSION..." );
     
-    $_extensionData = @file_get_contents( $_extensionUrl );
-    if( FALSE === $_extensionData ) {
-      file_put_contents( "php://stderr", "Error: Could not retrieve extension file.\n" );
-      file_put_contents( "php://stderr", "File requested: $_extensionUrl" );
-    }
-    $_tempFileName  = $_t3xName . ".temp";
-    file_put_contents( $_tempFileName, $_extensionData );
-    register_shutdown_function( "cleanUpTempFile", &$_tempFileName );
+    $_tempFileName = downloadExtension( $EXTENSION, $FORCE_VERSION );
     
     file_put_contents( "php://stderr", "Done.\n" );
     
