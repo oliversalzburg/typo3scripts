@@ -362,7 +362,7 @@ function printArray( $array, $indent, $nameIndent ) {
       echo $value;
 
     } else if( is_string( $value ) ) {
-      $_stringValue = quoted_printable_encode( $value );
+      $_stringValue = urlencode( $value );
       $_stringValueLength = strlen( $_stringValue );
       echo ( $_stringValueLength > 60 ) ? "String[$_stringValueLength]" : $_stringValue;
     }
