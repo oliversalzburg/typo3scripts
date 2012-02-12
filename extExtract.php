@@ -137,7 +137,6 @@ foreach( $argv as $_option ) {
   if( 0 === strpos( $_option, "--help" ) || 0 === strpos( $_option, "-h" ) ) {
     showHelp( $argv[ 0 ] );
     exit( 0 )
-    ;;
   }
 }
 
@@ -200,9 +199,11 @@ foreach( $argv as $_option ) {
 $_sumLatest = file_get_contents( UPDATE_BASE . "/versions" );
 $_isListed = preg_match( "/^(?P<sum>[0-9a-zA-Z]{32})\s*" . SELF ."/ms", $_sumLatest, $_ownSumLatest );
 if( !$_isListed ) {
-  file_put_contents( "php://stderr", "No update information is yet available for " . SELF . ".\n" );
+  file_put_contents( "php://stderr", "No update information is available for '" . SELF . "'.\n" );
+  file_put_contents( "php://stderr", "Please check the project home page http://code.google.com/p/typo3scripts/.\n" );
+  
 } else {
-  file_put_contents( "php://stderr", "Update checking isn't yet implemented for " . SELF . ".\n" );
+  file_put_contents( "php://stderr", "Update checking isn't yet implemented for '" . SELF . "'.\n" );
 }
 
 // Begin main operation
@@ -214,13 +215,40 @@ if( 0 === strpos( $EXTENSION, "--" ) ) {
   exit( 1 );
 }
 
+function cleanUpTempFile( &$_tempFileName ) {
+  unlink( $_tempFileName );
+}
+
 // Is the provided extension not just an extension key, but a filename?
 $_extensionFile = $EXTENSION;
 if( !file_exists( $_extensionFile ) ) {
   // It must be a reference to an extension installed in the local TYPO3 installation.
-  if( file_exists( "$BASE/typo3conf/ext/$EXTENSION" ) ) {
-    file_put_contents( "php://stderr", "Retrieving original extension file for '$BASE/typo3conf/ext/$EXTENSION'..." );
-    $_extensionFile = "downloaded.temp";
+  $_extensionDirectory = "$BASE/typo3conf/ext/$EXTENSION";
+  if( is_dir( $_extensionDirectory ) ) {
+    file_put_contents( "php://stderr", "Retrieving original extension file for '$EXTENSION'..." );
+    $_extensionConfigFile = "$_extensionDirectory/ext_emconf.php";
+    
+    // While it's not very nice to polute our script with the contents of ext_emconf.php,
+    // it's the most reliable way to parse the information.
+    $_EXTKEY = $EXTENSION;
+    include( $_extensionConfigFile );
+    $_extensionConfiguration = $EM_CONF[ $EXTENSION ];
+    
+    $_installedVersion = $_extensionConfiguration[ "version" ];
+    
+    $_firstLetter  = substr( $EXTENSION, 0, 1 );
+    $_secondLetter = substr( $EXTENSION, 1, 1 );
+    $_t3xName      = $EXTENSION . "_" . $_installedVersion . ".t3x";
+    $_extensionUrl = "http://typo3.org/fileadmin/ter/" . $_firstLetter . "/" . $_secondLetter . "/" . $_t3xName;
+    
+    $_extensionData = file_get_contents( $_extensionUrl );
+    $_tempFileName  = $_t3xName . ".temp";
+    file_put_contents( $_tempFileName, $_extensionData );
+    register_shutdown_function( "cleanUpTempFile", &$_tempFileName );
+    
+    file_put_contents( "php://stderr", "Done.\n" );
+    
+    $_extensionFile = $_tempFileName;
     
   } else {
     file_put_contents( "php://stderr", "Unable to find extension '$EXTENSION'.\n" );
@@ -316,6 +344,8 @@ if( $DUMP === "true" ) {
   printArray( $_extension, "", "" );
 }
 
+// Finally extract the extension files.
+// $EXTRACT is a string due to configuration file interoperability concerns
 if( $EXTRACT === "true" ) {
   // Extract contents
   foreach( $_extension[ "FILES" ] as $_filename => $_file ) {

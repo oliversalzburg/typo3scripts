@@ -204,7 +204,11 @@ echo "Succeeded." >&2
 # Update check
 SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $1}')
 SUM_SELF=$(md5sum "$0" | awk '{print $1}')
-if [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
+if [[ "" == $SUM_LATEST ]]; then
+  echo "No update information is available for '$SELF'" >&2
+  echo "Please check the project home page http://code.google.com/p/typo3scripts/." >&2
+  
+elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
   echo "NOTE: New version available!" >&2
 fi
 
@@ -295,6 +299,11 @@ for _extDirectory in "$BASE/typo3conf/ext/"*; do
   _errorMessage=$(echo $_query | mysql --host=$HOST --user=$USER --pass=$PASS --database=$DB --batch --skip-column-names 2>&1 > extVersion.out)
   _status=$?
   _latestVersion=$(cat extVersion.out)
+  if [[ "" == $_latestVersion ]]; then
+    echo "Warning: Could not determine the latest version of extension '$_extKey'!" >&2
+    echo "         No entry for the extension could be found in the extension cache." >&2
+    continue
+  fi
   rm -f extVersion.out
   set -e errexit
   if [[ 0 < $_status ]]; then
