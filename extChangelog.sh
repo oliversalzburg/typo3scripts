@@ -11,7 +11,7 @@ SELF=$(basename "$0")
 # Show the help for this script
 function showHelp() {
   cat << EOF
-  Usage: $0 [OPTIONS]
+  Usage: $0 [OPTIONS] [--extension=]EXTKEY
 
   Core:
   --help              Display this help and exit.

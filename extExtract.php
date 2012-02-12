@@ -12,7 +12,7 @@ define( "INVNAME", $argv[ 0 ] );
  */
 function showHelp( $name ) {
   echo <<<EOS
-  Usage: $name [OPTIONS]
+  Usage: $name [OPTIONS] [--extension=]EXTKEY
   
   Core:
   --help                  Display this help and exit.
