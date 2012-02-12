@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TYPO3 Installation Backup Script
+# TYPO3 Extension Changelog Extraction Script
 # written by Oliver Salzburg
 
 set -o nounset
@@ -11,16 +11,23 @@ SELF=$(basename "$0")
 # Show the help for this script
 function showHelp() {
   cat << EOF
-  Usage: $0 [OPTIONS]
-  
+  Usage: $0 [OPTIONS] [--extension=]EXTKEY
+
   Core:
   --help              Display this help and exit.
   --update            Tries to update the script to the latest version.
-  --base=PATH         The name of the base path where TYPO3 is 
+  --base=PATH         The name of the base path where Typo3 is
                       installed. If no base is supplied, "typo3" is used.
   --export-config     Prints the default configuration of this script.
   --extract-config    Extracts configuration parameters from TYPO3.
   
+  Options:
+  --extension=EXTKEY  The extension key of the extension for which to retrieve
+                      the changelog.
+  --first=VERSION     The first version that should be listed.
+  --last=VERSION      The last version that should be listed.
+  --skip-first        Skip the first found version.
+
   Database:
   --hostname=HOST     The name of the host where the TYPO3 database is running.
   --username=USER     The username to use when connecting to the TYPO3
@@ -48,17 +55,33 @@ function extractConfig() {
   echo DB=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db = ')[^']*(?=';)")
 }
 
+# Check on minimal command line argument count
+REQUIRED_ARGUMENT_COUNT=1
+if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
+  echo "Insufficient command line arguments!" >&2
+  echo "Use $0 --help to get additional information." >&2
+  exit 1
+fi
+
 # Script Configuration start
-# The base directory where TYPO3 is installed
+# The base directory where Typo3 is installed
 BASE=typo3
-# The hostname of the MySQL server that TYPO3 uses
+# The hostname of the MySQL server that Typo3 uses
 HOST=localhost
 # The username used to connect to that MySQL server
 USER=*username*
 # The password for that user
 PASS=*password*
-# The name of the database in which TYPO3 is stored
+# The name of the database in which Typo3 is stored
 DB=typo3
+# The extension key for which to retrieve the changelog
+EXTENSION=
+# The first version to list
+VERSION_FIRST=
+# The last version to list
+VERSION_LAST=
+# Should the first found version be skipped?
+SKIP_FIRST=0
 # Script Configuration end
 
 # The base location from where to retrieve new versions of this script
@@ -117,17 +140,17 @@ done
 # Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 BASE_CONFIG_FILENAME="typo3scripts.conf"
 if [[ -e "$BASE_CONFIG_FILENAME" ]]; then
-  echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
+  echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..." >&2
   source $BASE_CONFIG_FILENAME
-  echo "Done."
+  echo "Done." >&2
 fi
 
 # Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
 if [[ -e "$CONFIG_FILENAME" ]]; then
-  echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
+  echo -n "Sourcing script configuration from $CONFIG_FILENAME..." >&2
   source $CONFIG_FILENAME
-  echo "Done."
+  echo "Done." >&2
 fi
 
 # Read command line arguments (overwrites config file)
@@ -159,9 +182,20 @@ for option in $*; do
     --database=*)
       DB=$(echo $option | cut -d'=' -f2)
       ;;
+    --extension=*)
+      EXTENSION=$(echo $option | cut -d'=' -f2)
+      ;;
+    --first=*)
+      VERSION_FIRST=$(echo $option | cut -d'=' -f2)
+      ;;
+    --last=*)
+      VERSION_LAST=$(echo $option | cut -d'=' -f2)
+      ;;
+    --skip-first)
+      SKIP_FIRST=1
+      ;;
     *)
-      echo "Unrecognized option \"$option\""
-      exit 1
+      EXTENSION=$option
       ;;
   esac
 done
@@ -169,20 +203,15 @@ done
 # Check for dependencies
 function checkDependency() {
   if ! hash $1 2>&-; then
-    echo "Failed!"
+    echo "Failed!" >&2
     echo "This script requires '$1' but it can not be found. Aborting." >&2
     exit 1
   fi
 }
-echo -n "Checking dependencies..."
-checkDependency wget
-checkDependency curl
-checkDependency md5sum
-checkDependency grep
-checkDependency awk
-checkDependency tar
-checkDependency mysqldump
-echo "Succeeded."
+echo -n "Checking dependencies..." >&2
+checkDependency mysql
+checkDependency sed
+echo "Succeeded." >&2
 
 # Update check
 SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $1}')
@@ -197,60 +226,133 @@ fi
 
 # Begin main operation
 
+# Check argument validity
+if [[ $EXTENSION == --* ]]; then
+  echo "The given extension key '$EXTENSION' looks like a command line parameter." >&2
+  echo "Please use the --extension parameter when giving multiple arguments." >&2
+  exit 1
+fi
+
 # Does the base directory exist?
 if [[ ! -d $BASE ]]; then
-  echo "The base directory '$BASE' does not seem to exist!"
+  echo "The base directory '$BASE' does not seem to exist!" >&2
   exit 1
 fi
 # Is the base directory readable?
 if [[ ! -r $BASE ]]; then
-  echo "The base directory '$BASE' is not readable!"
+  echo "The base directory '$BASE' is not readable!" >&2
   exit 1
 fi
 
-# Filename for snapshot
-FILE=$BASE-$(date +%Y-%m-%d-%H-%M).tgz
+# Version number compare helper function
+# Created by Dennis Williamson (http://stackoverflow.com/questions/4023830/bash-how-compare-two-strings-in-version-format)
+function compareVersions() {
+  if [[ $1 == $2 ]]
+  then
+    return 0
+  fi
+  local IFS=.
+  local i ver1=($1) ver2=($2)
+  # fill empty fields in ver1 with zeros
+  for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+  do
+    ver1[i]=0
+  done
+  for ((i=0; i<${#ver1[@]}; i++))
+  do
+    if [[ -z ${ver2[i]} ]]
+    then
+      # fill empty fields in ver2 with zeros
+      ver2[i]=0
+    fi
+    if ((10#${ver1[i]} > 10#${ver2[i]}))
+    then
+      return 1
+    fi
+    if ((10#${ver1[i]} < 10#${ver2[i]}))
+    then
+      return 2
+    fi
+  done
+  return 0
+}
 
-echo "Creating TYPO3 backup '$FILE'..."
-
-# Create database dump
-echo -n "Creating database dump at $BASE/database.sql..."
+# Read upload comments from cached extensions data
+echo -n "Retrieving upload comment history..." >&2
 set +e errexit
-_errorMessage=$(mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database --databases $DB 2>&1 > $BASE/database.sql)
+_query="SELECT CONCAT(\`version\`,'\n',\`lastuploaddate\`,'\n',\`uploadcomment\`) FROM \`cache_extensions\` WHERE (\`extkey\` = '$EXTENSION');"
+_errorMessage=$(echo $_query | mysql --host=$HOST --user=$USER --pass=$PASS --database=$DB --batch --skip-column-names 2>&1 | sed 's/\\n/|/g' > extChangelog.out)
 _status=$?
 set -e errexit
 if [[ 0 < $_status ]]; then
-  echo "Failed!"
-  echo "Error: $_errorMessage"
+  echo "Failed!" >&2
+  echo "Error: $_errorMessage" >&2
   exit 1
 fi
-echo "Done."
+echo "Done." >&2
 
-
-# Create backup archive
-_statusMessage="Compressing TYPO3 installation..."
-echo -n $_statusMessage
-if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
-  echo
-  _folderSize=`du --summarize --bytes $BASE | cut --fields 1`
-  if ! tar --create --file - $BASE | pv --progress --rate --bytes --size $_folderSize | gzip --best > $FILE; then
-    echo "Failed!"
-    exit 1
+_isFirstVersionFound=1
+while read _versionEntry; do
+  _versionString=$(echo $_versionEntry | cut --delimiter=\| --fields=1 -)
+  _uploadDate=$(echo $_versionEntry | cut --delimiter=\| --fields=2 -)
+  
+  # Check if lower limit for version listing is provided
+  if [[ $VERSION_FIRST != "" ]]; then
+  
+    set +e errexit
+    compareVersions $_versionString $VERSION_FIRST
+    _versionsEqual=$?
+    set -e errexit
+    
+    case $_versionsEqual in
+      0) 
+        # Versions equal
+        ;;
+      1) 
+        # This version comment is of a later version than the first we should list
+        ;;
+      2)
+        # This version comment is of an earlier version than the first we should list, skip it
+        continue
+        ;;
+    esac
+    
   fi
-  # Clear pv output and position cursor after status message
-  tput cuu 2 && tput cuf ${#_statusMessage} && tput ed
-else
-  if ! tar --create --gzip --file $FILE $BASE; then
-    echo "Failed!"
-    exit 1
+  
+  # Check if upper limit for version listing is provided
+  if [[ $VERSION_LAST != "" ]]; then
+  
+    set +e errexit
+    compareVersions $_versionString $VERSION_LAST
+    _versionsEqual=$?
+    set -e errexit
+    
+    case $_versionsEqual in
+      0) 
+        # Versions equal
+        ;;
+      1) 
+        # This version comment is of a later version than the last we should list, skip it
+        continue
+        ;;
+      2)
+        # This version comment is of an earlier version than the last we should list
+        ;;
+    esac
+    
   fi
-fi
+  
+  if [[ 1 == $SKIP_FIRST && 1 == $_isFirstVersionFound ]]; then
+    _isFirstVersionFound=0
+    continue
+  fi
+  
+  echo $_versionString \($(date --date @$_uploadDate "+%Y-%m-%d %T")\)
+  _versionComment=$(echo $_versionEntry | cut --delimiter=\| --fields=3- -)
+  echo "  $_versionComment" | sed 's/|/\n  /g'
+  
+done < extChangelog.out
 
-echo "Done."
-
-# Now that the database dump is packed up, delete it
-echo -n "Deleting database dump..."
-rm --force -- $BASE/database.sql
-echo "Done!"
+rm -f extChangelog.out
 
 # vim:ts=2:sw=2:expandtab:

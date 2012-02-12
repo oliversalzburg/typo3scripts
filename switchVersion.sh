@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Typo3 Version Switching Script
+# TYPO3 Version Switching Script
 # written by Oliver Salzburg
 
 set -o nounset
@@ -16,9 +16,10 @@ function showHelp() {
   Core:
   --help            Display this help and exit.
   --update          Tries to update the script to the latest version.
-  --base=PATH       The name of the base path where Typo3 should be installed.
+  --base=PATH       The name of the base path where TYPO3 is installed.
                     If no base is supplied, "typo3" is used.
   --export-config   Prints the default configuration of this script.
+  --extract-config  Extracts configuration parameters from TYPO3.
   
   Options:
   --version=VERSION The version to switch to.
@@ -37,16 +38,26 @@ function exportConfig() {
   sed -n "/#\ Script\ Configuration\ start/,/# Script Configuration end/p" "$0"
 }
 
+# Extract all known (database related) parameters from the TYPO3 configuration.
+function extractConfig() {
+  LOCALCONF="$BASE/typo3conf/localconf.php"
+  
+  echo HOST=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_host = ')[^']*(?=';)")
+  echo USER=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_username = ')[^']*(?=';)")
+  echo PASS=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_password = ')[^']*(?=';)")
+  echo DB=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db = ')[^']*(?=';)")
+}
+
 # Check on minimal command line argument count
 REQUIRED_ARGUMENT_COUNT=1
 if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
   echo "Insufficient command line arguments!"
   echo "Use $0 --help to get additional information."
-  exit -1
+  exit 1
 fi
 
 # Script Configuration start
-# The base directory where Typo3 is installed
+# The base directory where TYPO3 is installed
 BASE=typo3
 # The version to switch to
 VERSION=$1
@@ -59,9 +70,11 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 function runSelfUpdate() {
   echo "Performing self-update..."
   
+  _tempFileName="$0.tmp"
+  
   # Download new version
   echo -n "Downloading latest version..."
-  if ! wget --quiet --output-document="$0.tmp" $UPDATE_BASE/$SELF ; then
+  if ! wget --quiet --output-document="$_tempFileName" $UPDATE_BASE/$SELF ; then
     echo "Failed: Error while trying to wget new version!"
     echo "File requested: $UPDATE_BASE/$SELF"
     exit 1
@@ -70,8 +83,8 @@ function runSelfUpdate() {
   
   # Copy over modes from old version
   OCTAL_MODE=$(stat -c '%a' $SELF)
-  if ! chmod $OCTAL_MODE "$0.tmp" ; then
-    echo "Failed: Error while trying to set mode on $0.tmp."
+  if ! chmod $OCTAL_MODE "$_tempFileName" ; then
+    echo "Failed: Error while trying to set mode on $_tempFileName."
     exit 1
   fi
   
@@ -79,7 +92,7 @@ function runSelfUpdate() {
   cat > updateScript.sh << EOF
 #!/bin/bash
 # Overwrite old file with new
-if mv "$0.tmp" "$0"; then
+if mv "$_tempFileName" "$0"; then
   echo "Done. Update complete."
   rm -- \$0
 else
@@ -91,9 +104,29 @@ EOF
   exec /bin/bash updateScript.sh
 }
 
-# Read external configuration
+# Make a quick run through the command line arguments to see if the user wants
+# to print the help. This saves us a lot of headache with respecting the order
+# in which configuration parameters have to be overwritten.
+for option in $*; do
+  case "$option" in
+    --help|-h)
+      showHelp
+      exit 0
+      ;;
+  esac
+done
+
+# Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
+BASE_CONFIG_FILENAME="typo3scripts.conf"
+if [[ -e "$BASE_CONFIG_FILENAME" ]]; then
+  echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
+  source $BASE_CONFIG_FILENAME
+  echo "Done."
+fi
+
+# Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [[ -e "$CONFIG_FILENAME" && !( $# > 1 && "$1" != "--help" && "$1" != "-h" ) ]]; then
+if [[ -e "$CONFIG_FILENAME" ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."
@@ -102,10 +135,6 @@ fi
 # Read command line arguments (overwrites config file)
 for option in $*; do
   case "$option" in
-    --help|-h)
-      showHelp
-      exit 0
-      ;;
     --update)
       runSelfUpdate
       ;;
@@ -114,6 +143,10 @@ for option in $*; do
       ;;
     --export-config)
       exportConfig
+      exit 0
+      ;;
+    --extract-config)
+      extractConfig
       exit 0
       ;;
     --version=*)
@@ -145,15 +178,19 @@ echo "Succeeded."
 # Update check
 SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $1}')
 SUM_SELF=$(md5sum "$0" | awk '{print $1}')
-if [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
-  echo "NOTE: New version available!"
+if [[ "" == $SUM_LATEST ]]; then
+  echo "No update information is available for '$SELF'" >&2
+  echo "Please check the project home page http://code.google.com/p/typo3scripts/." >&2
+  
+elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
+  echo "NOTE: New version available!" >&2
 fi
 
 # Begin main operation
 
 # Check argument validity
 if [[ $VERSION == --* ]]; then
-  echo "The given Typo3 version '$VERSION' looks like a command line parameter."
+  echo "The given TYPO3 version '$VERSION' looks like a command line parameter."
   echo "Please use the --version parameter when giving multiple arguments."
   exit 1
 fi
@@ -165,11 +202,11 @@ VERSION_DIRNAME=typo3_src-$VERSION
 VERSION_DIR=$BASE/$VERSION_DIRNAME/
 SYMLINK=$BASE/typo3_src
 
-echo -n "Looking for Typo3 source package at $VERSION_DIR..."
+echo -n "Looking for TYPO3 source package at $VERSION_DIR..."
 if [[ -d "$VERSION_DIR" ]]; then
   echo "Found!"
 else
-  # Retrieve Typo3 source package
+  # Retrieve TYPO3 source package
   if [[ -e "$VERSION_FILE" ]]; then
     echo "NOT found!"
     echo "Archive already exists. Trying to resume download."
@@ -197,7 +234,7 @@ else
 fi
 
 # Switch symlink
-echo -n "Switching Typo3 source symlink to $VERSION_DIR..."
+echo -n "Switching TYPO3 source symlink to $VERSION_DIR..."
 if ! rm --force -- $SYMLINK; then
   echo "Failed! Unable to remove old symlink '$SYMLINK'"
   exit 1
@@ -213,7 +250,7 @@ echo "Done."
 # the --fix-indexphp parameter.
 INDEX_PHP=$BASE/index.php
 INDEX_TARGET=$SYMLINK/index.php
-echo -n "Checking if index.php need to be updated..."
+echo -n "Checking if index.php needs to be updated..."
 if [[ -h "$INDEX_PHP" ]]; then
   rm -f "$INDEX_PHP"
   cp "$INDEX_TARGET" "$INDEX_PHP"

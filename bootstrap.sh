@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Typo3 Bootstrapper Script
+# TYPO3 Bootstrapper Script
 # written by Oliver Salzburg
 
 set -o nounset
@@ -16,9 +16,10 @@ function showHelp() {
   Core:
   --help              Display this help and exit.
   --update            Tries to update the script to the latest version.
-  --base=PATH         The name of the base path where Typo3 should be
+  --base=PATH         The name of the base path where TYPO3 should be
                       installed. If no base is supplied, "typo3" is used.
   --export-config     Prints the default configuration of this script.
+  --extract-config    Extracts configuration parameters from TYPO3.
 
   Options:
   --version=VERSION   The version to install.
@@ -31,12 +32,12 @@ function showHelp() {
   --fix-indexphp      Replaces the index.php symlink with the actual file.
 
   Database:
-  --hostname=HOST     The name of the host where the Typo3 database is running.
-  --username=USER     The username to use when connecting to the Typo3
+  --hostname=HOST     The name of the host where the TYPO3 database is running.
+  --username=USER     The username to use when connecting to the TYPO3
                       database.
-  --password=PASSWORD The password to use when connecting to the Typo3
+  --password=PASSWORD The password to use when connecting to the TYPO3
                       database.
-  --database=DB       The name of the database in which Typo3 is stored.
+  --database=DB       The name of the database in which TYPO3 is stored.
 
   Note: When using an external configuration file, it is sufficient to supply
         just the target version as a parameter.
@@ -52,28 +53,38 @@ function exportConfig() {
   sed -n "/#\ Script\ Configuration\ start/,/# Script Configuration end/p" "$0"
 }
 
+# Extract all known (database related) parameters from the TYPO3 configuration.
+function extractConfig() {
+  LOCALCONF="$BASE/typo3conf/localconf.php"
+  
+  echo HOST=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_host = ')[^']*(?=';)")
+  echo USER=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_username = ')[^']*(?=';)")
+  echo PASS=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_password = ')[^']*(?=';)")
+  echo DB=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db = ')[^']*(?=';)")
+}
+
 # Check on minimal command line argument count
 REQUIRED_ARGUMENT_COUNT=1
 if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
   echo "Insufficient command line arguments!"
   echo "Use $0 --help to get additional information."
-  exit -1
+  exit 1
 fi
 
 # Script Configuration start
-# The base directory where Typo3 should be installed
+# The base directory where TYPO3 should be installed
 BASE=typo3
 # The version to install
 VERSION=$1
-# The hostname of the MySQL server that Typo3 uses
+# The hostname of the MySQL server that TYPO3 uses
 HOST=localhost
 # The username used to connect to that MySQL server
 USER=*username*
 # The password for that user
 PASS=*password*
-# The name of the database in which Typo3 is stored
+# The name of the database in which TYPO3 is stored
 DB=typo3
-# Should the database configuration be written to the Typo3 configuration?
+# Should the database configuration be written to the TYPO3 configuration?
 SKIP_DB_CONFIG=false
 # Should the detection of GraphicsMagick be skipped?
 SKIP_GM_DETECT=false
@@ -82,7 +93,7 @@ SKIP_UNZIP_DETECT=false
 # Should we try to fix access permissions for files of the new
 # installation?
 SKIP_RIGHTS=false
-# The owner of the Typo3 installation
+# The owner of the TYPO3 installation
 OWNER=$(id --user --name)
 # The group the local http daemon is running as (usually www-data or apache)
 HTTPD_GROUP=www-data
@@ -94,7 +105,7 @@ FIX_INDEXPHP=false
 if [[ -r /dev/urandom ]]; then
   # Generate a password for the database user
   PASS=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
-  # Generate another password for the Typo3 install tool
+  # Generate another password for the TYPO3 install tool
   INSTALL_TOOL_PASSWORD=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
 fi
 
@@ -109,42 +120,64 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 # Self-update
 function runSelfUpdate() {
   echo "Performing self-update..."
-
+  
+  _tempFileName="$0.tmp"
+  
   # Download new version
   echo -n "Downloading latest version..."
-  if ! wget --quiet --output-document="$0.tmp" $UPDATE_BASE/$SELF ; then
+  if ! wget --quiet --output-document="$_tempFileName" $UPDATE_BASE/$SELF ; then
     echo "Failed: Error while trying to wget new version!"
     echo "File requested: $UPDATE_BASE/$SELF"
     exit 1
   fi
   echo "Done."
-
+  
   # Copy over modes from old version
   OCTAL_MODE=$(stat -c '%a' $SELF)
-  if ! chmod $OCTAL_MODE "$0.tmp" ; then
-    echo "Failed: Error while trying to set mode on $0.tmp."
+  if ! chmod $OCTAL_MODE "$_tempFileName" ; then
+    echo "Failed: Error while trying to set mode on $_tempFileName."
     exit 1
   fi
-
+  
   # Spawn update script
   cat > updateScript.sh << EOF
 #!/bin/bash
 # Overwrite old file with new
-if mv "$0.tmp" "$0"; then
+if mv "$_tempFileName" "$0"; then
   echo "Done. Update complete."
   rm -- \$0
 else
   echo "Failed!"
 fi
 EOF
-
+  
   echo -n "Inserting update process..."
   exec /bin/bash updateScript.sh
 }
 
-# Read external configuration (overwrites default, hard-coded configuration)
+# Make a quick run through the command line arguments to see if the user wants
+# to print the help. This saves us a lot of headache with respecting the order
+# in which configuration parameters have to be overwritten.
+for option in $*; do
+  case "$option" in
+    --help|-h)
+      showHelp
+      exit 0
+      ;;
+  esac
+done
+
+# Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
+BASE_CONFIG_FILENAME="typo3scripts.conf"
+if [[ -e "$BASE_CONFIG_FILENAME" ]]; then
+  echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
+  source $BASE_CONFIG_FILENAME
+  echo "Done."
+fi
+
+# Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
-if [[ -e "$CONFIG_FILENAME" && !( $# > 1 && "$1" != "--help" && "$1" != "-h" ) ]]; then
+if [[ -e "$CONFIG_FILENAME" ]]; then
   echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
   echo "Done."
@@ -153,10 +186,6 @@ fi
 # Read command line arguments (overwrites config file)
 for option in $*; do
   case "$option" in
-    --help|-h)
-      showHelp
-      exit 0
-      ;;
     --update)
       runSelfUpdate
       ;;
@@ -165,6 +194,10 @@ for option in $*; do
       ;;
     --export-config)
       exportConfig
+      exit 0
+      ;;
+    --extract-config)
+      extractConfig
       exit 0
       ;;
     --version=*)
@@ -230,8 +263,12 @@ echo "Succeeded."
 # Update check
 SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $1}')
 SUM_SELF=$(md5sum "$0" | awk '{print $1}')
-if [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
-  echo "NOTE: New version available!"
+if [[ "" == $SUM_LATEST ]]; then
+  echo "No update information is available for '$SELF'" >&2
+  echo "Please check the project home page http://code.google.com/p/typo3scripts/." >&2
+  
+elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
+  echo "NOTE: New version available!" >&2
 fi
 
 # Begin main operation
@@ -245,7 +282,7 @@ fi
 
 # Check argument validity
 if [[ $VERSION == --* ]]; then
-  echo "The given Typo3 version '$VERSION' looks like a command line parameter."
+  echo "The given TYPO3 version '$VERSION' looks like a command line parameter."
   echo "Please use the --version parameter when giving multiple arguments."
   exit 1
 fi
@@ -265,7 +302,7 @@ VERSION_FILENAME=$VERSION_NAME.tar.gz
 # The location where the package can be downloaded
 TYPO3_DOWNLOAD_URL=http://prdownloads.sourceforge.net/typo3/$VERSION_FILENAME
 
-echo -n "Looking for Typo3 package at $VERSION_FILENAME..."
+echo -n "Looking for TYPO3 package at $VERSION_FILENAME..."
 if [[ ! -e "$VERSION_FILENAME" ]]; then
   echo "NOT found!"
   echo -n "Downloading $TYPO3_DOWNLOAD_URL..."
@@ -277,14 +314,14 @@ else
 fi
 echo "Done."
 
-echo -n "Extracting Typo3 package $VERSION_FILENAME..."
+echo -n "Extracting TYPO3 package $VERSION_FILENAME..."
 if ! tar --extract --gzip --file $VERSION_FILENAME; then
   echo "Failed!"
   exit 1
 fi
 echo "Done."
 
-echo -n "Moving Typo3 package to $BASE..."
+echo -n "Moving TYPO3 package to $BASE..."
 if ! mv $VERSION_NAME $BASE; then
   echo "Failed!"
   exit 1
@@ -312,11 +349,11 @@ if ! $SKIP_DB_CONFIG; then
   TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_password = '$PASS';\n"
   TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_host     = '$HOST';\n"
   # Writing the database name is currently disabled. There doesn't seem to be
-  # any advantage to it and it conflicts with the Typo3 installer.
+  # any advantage to it and it conflicts with the TYPO3 installer.
   #TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db          = '$DB';\n"
 fi
 
-# Write Typo3 install tool password
+# Write TYPO3 install tool password
 INSTALL_TOOL_PASSWORD_HASH=$(echo -n $INSTALL_TOOL_PASSWORD | md5sum | awk '{print $1}')
 TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['BE']['installToolPassword'] = '$INSTALL_TOOL_PASSWORD_HASH';\n"
 
@@ -361,7 +398,7 @@ echo "Done."
 
 # Fix permissions
 if ! $SKIP_RIGHTS; then
-  echo -n "Adjusting access permissions for Typo3 installation..."
+  echo -n "Adjusting access permissions for TYPO3 installation..."
   if ! $(id --group $HTTPD_GROUP > /dev/null); then
     echo "Failed! The supplied group '$HTTPD_GROUP' is not known on the system."
     exit 1
@@ -382,6 +419,6 @@ if $FIX_INDEXPHP; then
 fi
 
 echo
-echo "Your Typo3 Install Tool password is: '$INSTALL_TOOL_PASSWORD'"
+echo "Your TYPO3 Install Tool password is: '$INSTALL_TOOL_PASSWORD'"
 
 # vim:ts=2:sw=2:expandtab:
