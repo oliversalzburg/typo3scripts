@@ -1,4 +1,4 @@
 #!/bin/bash
-md5sum *.sh > versions
+md5sum *.sh *.php > versions
 
 # vim:ts=2:sw=2:expandtab:
