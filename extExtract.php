@@ -28,6 +28,8 @@ function showHelp( $name ) {
   --force-version=VERSION Forces download of specific extension version.
   --dump                  Prints out a dump of the data structure of the
                           extension file.
+  --string-limit=LENGTH   The LENGTH at which string data should be summarized
+                          as String[N]. Default: 60 No Limit: 0
   --extract               Forces the extraction process even if other commands
                           were invoked.
   --output-dir=DIRECTORY  The DIRECTORY to where the extension should be
@@ -81,6 +83,8 @@ $EXTENSION="";
 $OUTPUTDIR="";
 # Should the data structure of the extension be printed?
 $DUMP="false";
+# The length at which strings should be summarized in the dump output.
+$STRING_LIMIT="60";
 # Should the extraction process be skipped?
 $EXTRACT="true";
 # Force a specific extension version to be downloaded
@@ -189,6 +193,9 @@ foreach( $argv as $_option ) {
   } else if( 0 === strpos( $_option, "--dump" ) ) {
     $DUMP    = "true";
     $EXTRACT = "false";
+    
+  } else if( 0 === strpos( $_option, "--string-limit=" ) ) {
+    $STRING_LIMIT = substr( $_option, strpos( $_option, "=" ) + 1 );
   
   } else if( 0 === strpos( $_option, "--extract" ) ) {
     $EXTRACT = "true";
@@ -362,9 +369,17 @@ function printArray( $array, $indent, $nameIndent ) {
       echo $value;
 
     } else if( is_string( $value ) ) {
-      $_stringValue = urlencode( $value );
-      $_stringValueLength = strlen( $_stringValue );
-      echo ( $_stringValueLength > 60 ) ? "String[$_stringValueLength]" : $_stringValue;
+      $_valueLength = strlen( $value );
+      global $STRING_LIMIT;
+      if( !ctype_print( $value ) || ( intval( $STRING_LIMIT ) > 0 && $_valueLength > intval( $STRING_LIMIT ) ) ) {
+        echo "String[$_valueLength]";
+        
+      } else {
+        echo $value;
+      }
+      
+    } else {
+      echo gettype( $value );
     }
     echo "\n";
   }
