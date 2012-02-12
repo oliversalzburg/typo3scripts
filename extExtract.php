@@ -15,22 +15,23 @@ function showHelp( $name ) {
   Usage: $name [OPTIONS]
   
   Core:
-  --help                 Display this help and exit.
-  --update               Tries to update the script to the latest version.
-  --base=PATH            The name of the base path where Typo3 is
-                         installed. If no base is supplied, "typo3" is used.
-  --export-config        Prints the default configuration of this script.
-  --extract-config       Extracts configuration parameters from TYPO3.
+  --help                  Display this help and exit.
+  --update                Tries to update the script to the latest version.
+  --base=PATH             The name of the base path where Typo3 is
+                          installed. If no base is supplied, "typo3" is used.
+  --export-config         Prints the default configuration of this script.
+  --extract-config        Extracts configuration parameters from TYPO3.
   
   Options:
-  --extension=EXTKEY     The extension key of the extension that should be
-                         operated on.
-  --dump                 Prints out a dump of the data structure of the
-                         extension file.
-  --extract              Forces the extraction process even if other commands
-                         were invoked.
-  --output-dir=DIRECTORY The DIRECTORY to where the extension should be
-                         extracted.
+  --extension=EXTKEY      The extension key of the extension that should be
+                          operated on.
+  --force-version=VERSION Forces download of specific extension version.
+  --dump                  Prints out a dump of the data structure of the
+                          extension file.
+  --extract               Forces the extraction process even if other commands
+                          were invoked.
+  --output-dir=DIRECTORY  The DIRECTORY to where the extension should be
+                          extracted.
 
 EOS;
 }
@@ -82,6 +83,8 @@ $OUTPUTDIR="";
 $DUMP="false";
 # Should the extraction process be skipped?
 $EXTRACT="true";
+# Force a specific extension version to be downloaded
+$FORCE_VERSION="";
 # Script Configuration end
 
 // The base location from where to retrieve new versions of this script
@@ -136,7 +139,7 @@ EOS;
 foreach( $argv as $_option ) {
   if( 0 === strpos( $_option, "--help" ) || 0 === strpos( $_option, "-h" ) ) {
     showHelp( $argv[ 0 ] );
-    exit( 0 )
+    exit( 0 );
   }
 }
 
@@ -179,6 +182,9 @@ foreach( $argv as $_option ) {
 
   } else if( 0 === strpos( $_option, "--extension=" ) ) {
     $EXTENSION = substr( $_option, strpos( $_option, "=" ) + 1 );
+    
+  } else if( 0 === strpos( $_option, "--force-version=" ) ) {
+    $FORCE_VERSION = substr( $_option, strpos( $_option, "=" ) + 1 );
     
   } else if( 0 === strpos( $_option, "--dump" ) ) {
     $DUMP    = "true";
@@ -224,8 +230,10 @@ $_extensionFile = $EXTENSION;
 if( !file_exists( $_extensionFile ) ) {
   // It must be a reference to an extension installed in the local TYPO3 installation.
   $_extensionDirectory = "$BASE/typo3conf/ext/$EXTENSION";
-  if( is_dir( $_extensionDirectory ) ) {
-    file_put_contents( "php://stderr", "Retrieving original extension file for '$EXTENSION'..." );
+  // But we only need to check it if the user doesn't want a specific version.
+  if( is_dir( $_extensionDirectory ) && "" == $FORCE_VERSION ) {
+    // The user wants to get the latest, official extension file for an installed extension
+    file_put_contents( "php://stderr", "Retrieving original extension file for '$EXTENSION' " );
     $_extensionConfigFile = "$_extensionDirectory/ext_emconf.php";
     
     // While it's not very nice to polute our script with the contents of ext_emconf.php,
@@ -235,6 +243,7 @@ if( !file_exists( $_extensionFile ) ) {
     $_extensionConfiguration = $EM_CONF[ $EXTENSION ];
     
     $_installedVersion = $_extensionConfiguration[ "version" ];
+    file_put_contents( "php://stderr", "$_installedVersion..." );
     
     $_firstLetter  = substr( $EXTENSION, 0, 1 );
     $_secondLetter = substr( $EXTENSION, 1, 1 );
@@ -242,6 +251,28 @@ if( !file_exists( $_extensionFile ) ) {
     $_extensionUrl = "http://typo3.org/fileadmin/ter/" . $_firstLetter . "/" . $_secondLetter . "/" . $_t3xName;
     
     $_extensionData = file_get_contents( $_extensionUrl );
+    $_tempFileName  = $_t3xName . ".temp";
+    file_put_contents( $_tempFileName, $_extensionData );
+    register_shutdown_function( "cleanUpTempFile", &$_tempFileName );
+    
+    file_put_contents( "php://stderr", "Done.\n" );
+    
+    $_extensionFile = $_tempFileName;
+    
+  } else if( "" != $FORCE_VERSION ) {
+    // The user is looking for a specific version of an extension. Retrieve it.
+    file_put_contents( "php://stderr", "Retrieving original extension file for '$EXTENSION'..." );
+    
+    $_firstLetter  = substr( $EXTENSION, 0, 1 );
+    $_secondLetter = substr( $EXTENSION, 1, 1 );
+    $_t3xName      = $EXTENSION . "_" . $FORCE_VERSION . ".t3x";
+    $_extensionUrl = "http://typo3.org/fileadmin/ter/" . $_firstLetter . "/" . $_secondLetter . "/" . $_t3xName;
+    
+    $_extensionData = @file_get_contents( $_extensionUrl );
+    if( FALSE === $_extensionData ) {
+      file_put_contents( "php://stderr", "Error: Could not retrieve extension file.\n" );
+      file_put_contents( "php://stderr", "File requested: $_extensionUrl" );
+    }
     $_tempFileName  = $_t3xName . ".temp";
     file_put_contents( $_tempFileName, $_extensionData );
     register_shutdown_function( "cleanUpTempFile", &$_tempFileName );

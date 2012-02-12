@@ -290,6 +290,11 @@ fi
 # Check versions on all installed extensions
 _updatesAvailable=0
 for _extDirectory in "$BASE/typo3conf/ext/"*; do
+  # Skip non-directories
+  if [[ ! -d $_extDirectory ]]; then
+    continue
+  fi
+  
   _extKey=$(basename "$_extDirectory")
   # Determine installed version from ext_emconf.php
   _installedVersion=$(grep --perl-regexp "'version'\s*=>\s*'\d{1,3}\.\d{1,3}\.\d{1,3}'" "$_extDirectory/ext_emconf.php" | grep --perl-regexp --only-matching "\d{1,3}\.\d{1,3}\.\d{1,3}")
