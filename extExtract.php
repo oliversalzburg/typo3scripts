@@ -60,7 +60,7 @@ function extractConfig() {
 define( "REQUIRED_ARGUMENT_COUNT", 1 );
 if( $argc <= REQUIRED_ARGUMENT_COUNT ) {
   file_put_contents( "php://stderr", "Insufficient command line arguments!\n" );
-  file_put_contents( "php://stderr", "Use INVNAME --help to get additional information.\n" );
+  file_put_contents( "php://stderr", "Use " . INVNAME . " --help to get additional information.\n" );
   exit( 1 );
 }
 
