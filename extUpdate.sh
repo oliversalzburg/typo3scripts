@@ -288,6 +288,7 @@ else
 fi
 
 # Check versions on all installed extensions
+_updatesAvailable=0
 for _extDirectory in "$BASE/typo3conf/ext/"*; do
   _extKey=$(basename "$_extDirectory")
   # Determine installed version from ext_emconf.php
@@ -319,6 +320,7 @@ for _extDirectory in "$BASE/typo3conf/ext/"*; do
   set -e errexit
   
   if [[ $_versionsEqual != 0 ]]; then
+    (( ++_updatesAvailable ))
     echo "New version of '$_extKey' available. Installed: $_installedVersion Latest: $_latestVersion"
     if [[ $DISPLAY_CHANGELOG == 1 && -e extChangelog.sh ]]; then
       ./extChangelog.sh --extension=$_extKey --first=$_installedVersion 2>/dev/null
@@ -326,5 +328,9 @@ for _extDirectory in "$BASE/typo3conf/ext/"*; do
     fi
   fi
 done
+
+if [[ 0 -eq $_updatesAvailable ]]; then
+  echo "No updates available." >&2
+fi
 
 # vim:ts=2:sw=2:expandtab:
