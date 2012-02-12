@@ -26,6 +26,7 @@ function showHelp() {
                       the changelog.
   --first=VERSION     The first version that should be listed.
   --last=VERSION      The last version that should be listed.
+  --skip-first        Skip the first found version.
 
   Database:
   --hostname=HOST     The name of the host where the TYPO3 database is running.
@@ -79,6 +80,8 @@ EXTENSION=
 VERSION_FIRST=
 # The last version to list
 VERSION_LAST=
+# Should the first found version be skipped?
+SKIP_FIRST=0
 # Script Configuration end
 
 # The base location from where to retrieve new versions of this script
@@ -188,6 +191,9 @@ for option in $*; do
     --last=*)
       VERSION_LAST=$(echo $option | cut -d'=' -f2)
       ;;
+    --skip-first)
+      SKIP_FIRST=1
+      ;;
     *)
       EXTENSION=$option
       ;;
@@ -285,6 +291,7 @@ if [[ 0 < $_status ]]; then
 fi
 echo "Done." >&2
 
+_isFirstVersionFound=1
 while read _versionEntry; do
   _versionString=$(echo $_versionEntry | cut --delimiter=\| --fields=1 -)
   _uploadDate=$(echo $_versionEntry | cut --delimiter=\| --fields=2 -)
@@ -333,6 +340,11 @@ while read _versionEntry; do
         ;;
     esac
     
+  fi
+  
+  if [[ 1 == $SKIP_FIRST && 1 == $_isFirstVersionFound ]]; then
+    _isFirstVersionFound=0
+    continue
   fi
   
   echo $_versionString \($(date --date @$_uploadDate "+%Y-%m-%d %T")\)

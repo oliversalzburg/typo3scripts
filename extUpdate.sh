@@ -323,7 +323,7 @@ for _extDirectory in "$BASE/typo3conf/ext/"*; do
     (( ++_updatesAvailable ))
     echo "New version of '$_extKey' available. Installed: $_installedVersion Latest: $_latestVersion"
     if [[ $DISPLAY_CHANGELOG == 1 && -e extChangelog.sh ]]; then
-      ./extChangelog.sh --extension=$_extKey --first=$_installedVersion 2>/dev/null
+      ./extChangelog.sh --extension=$_extKey --first=$_installedVersion --skip-first 2>/dev/null
       echo
     fi
   fi
