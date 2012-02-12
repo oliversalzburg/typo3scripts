@@ -15,16 +15,18 @@ function showHelp( $name ) {
   Usage: $name [OPTIONS]
   
   Core:
-  --help              Display this help and exit.
-  --update            Tries to update the script to the latest version.
-  --base=PATH         The name of the base path where Typo3 is
-                      installed. If no base is supplied, "typo3" is used.
-  --export-config     Prints the default configuration of this script.
-  --extract-config    Extracts configuration parameters from TYPO3.
+  --help                 Display this help and exit.
+  --update               Tries to update the script to the latest version.
+  --base=PATH            The name of the base path where Typo3 is
+                         installed. If no base is supplied, "typo3" is used.
+  --export-config        Prints the default configuration of this script.
+  --extract-config       Extracts configuration parameters from TYPO3.
   
   Options:
-  --extension=EXTKEY  The extension key of the extension that should be
-                      operated on.
+  --extension=EXTKEY     The extension key of the extension that should be
+                         operated on.
+  --output-dir=DIRECTORY The DIRECTORY to where the extension should be
+                         extracted.
 
 EOS;
 }
@@ -70,6 +72,8 @@ $PASS="*password*";
 $DB="typo3";
 # The extension key for which to retrieve the changelog
 $EXTENSION="";
+# The directory to where the extension should be extracted.
+$OUTPUTDIR="";
 # Script Configuration end
 
 // The base location from where to retrieve new versions of this script
@@ -169,6 +173,9 @@ foreach( $argv as $_option ) {
   } else if( 0 === strpos( $_option, "--extension=" ) ) {
     $EXTENSION = substr( $_option, strpos( $_option, "=" ) + 1 );
 
+  } else if( 0 === strpos( $_option, "--output-dir=" ) ) {
+    $OUTPUTDIR = substr( $_option, strpos( $_option, "=" ) + 1 );
+
   } else {
     $EXTENSION = $_option;
   }
@@ -242,6 +249,10 @@ if( file_exists( $_extensionFile ) ) {
   exit( 1 );
 }
 
+foreach( $_extension[ "FILES" ] as $_filename => $_file ) {
+  echo $_file[ "name" ] . "\n";
+}
+
 function printArray( $array, $indent, $nameIndent ) {
   foreach( $array as $name => $value ) {
     echo $indent . $name . substr( $nameIndent, 0, -strlen( $name ) ) . " = ";
@@ -268,7 +279,7 @@ function printArray( $array, $indent, $nameIndent ) {
   }
 }
 
-printArray( $_extension, "", "" );
+//printArray( $_extension, "", "" );
 
 
 # vim:ts=2:sw=2:expandtab:
