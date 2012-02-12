@@ -296,6 +296,10 @@ for _extDirectory in "$BASE/typo3conf/ext/"*; do
   fi
   
   _extKey=$(basename "$_extDirectory")
+  if [[ "" != $EXTENSION && $_extKey != $EXTENSION ]]; then
+    continue
+  fi
+
   # Determine installed version from ext_emconf.php
   _installedVersion=$(grep --perl-regexp "'version'\s*=>\s*'\d{1,3}\.\d{1,3}\.\d{1,3}'" "$_extDirectory/ext_emconf.php" | grep --perl-regexp --only-matching "\d{1,3}\.\d{1,3}\.\d{1,3}")
   
