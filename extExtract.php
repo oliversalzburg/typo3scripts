@@ -250,7 +250,15 @@ if( file_exists( $_extensionFile ) ) {
 }
 
 foreach( $_extension[ "FILES" ] as $_filename => $_file ) {
-  echo $_file[ "name" ] . "\n";
+  $_directoryName = dirname( $_file[ "name" ] );
+  if( "." != $_directoryName ) {
+    $_fullPathName = $OUTPUTDIR . "/" . $_directoryName;
+    if( !file_exists( $_fullPathName  ) ) {
+     mkdir( $_fullPathName, 0700, true );
+   }
+  }
+  $_fullFileName = $OUTPUTDIR . "/" . $_file[ "name" ];
+  file_put_contents( $_fullFileName, $_file[ "content" ] );
 }
 
 function printArray( $array, $indent, $nameIndent ) {
