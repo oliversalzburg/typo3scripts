@@ -28,10 +28,14 @@ function showHelp( $name ) {
   --force-version=VERSION Forces download of specific extension version.
   --dump                  Prints out a dump of the data structure of the
                           extension file.
+  --string-limit=LENGTH   The LENGTH at which string data should be summarized
+                          as String[N]. Default: 60 No Limit: 0
   --extract               Forces the extraction process even if other commands
                           were invoked.
   --output-dir=DIRECTORY  The DIRECTORY to where the extension should be
                           extracted.
+  --output-file[=NAME]    Write the downloaded extension file to disk with and
+                          optional NAME.
 
 EOS;
 }
@@ -60,7 +64,7 @@ function extractConfig() {
 define( "REQUIRED_ARGUMENT_COUNT", 1 );
 if( $argc <= REQUIRED_ARGUMENT_COUNT ) {
   file_put_contents( "php://stderr", "Insufficient command line arguments!\n" );
-  file_put_contents( "php://stderr", "Use INVNAME --help to get additional information.\n" );
+  file_put_contents( "php://stderr", "Use " . INVNAME . " --help to get additional information.\n" );
   exit( 1 );
 }
 
@@ -79,8 +83,12 @@ $DB="typo3";
 $EXTENSION="";
 # The directory to where the extension should be extracted.
 $OUTPUTDIR="";
+# The file where possibly downloaded, temporary files should be stored
+$OUTPUTFILE="";
 # Should the data structure of the extension be printed?
 $DUMP="false";
+# The length at which strings should be summarized in the dump output.
+$STRING_LIMIT="60";
 # Should the extraction process be skipped?
 $EXTRACT="true";
 # Force a specific extension version to be downloaded
@@ -189,6 +197,9 @@ foreach( $argv as $_option ) {
   } else if( 0 === strpos( $_option, "--dump" ) ) {
     $DUMP    = "true";
     $EXTRACT = "false";
+    
+  } else if( 0 === strpos( $_option, "--string-limit=" ) ) {
+    $STRING_LIMIT = substr( $_option, strpos( $_option, "=" ) + 1 );
   
   } else if( 0 === strpos( $_option, "--extract" ) ) {
     $EXTRACT = "true";
@@ -196,6 +207,16 @@ foreach( $argv as $_option ) {
   } else if( 0 === strpos( $_option, "--output-dir=" ) ) {
     $OUTPUTDIR = substr( $_option, strpos( $_option, "=" ) + 1 );
 
+  } else if( 0 === strpos( $_option, "--output-file" ) ) {
+    $_equalSignIndex = strpos( $_option, "=" );
+    if( FALSE === $_equalSignIndex ) {
+      $OUTPUTFILE = FALSE;
+      
+    } else {
+      $OUTPUTFILE = substr( $_option, $_equalSignIndex + 1 );
+    }
+    echo "Output file ='" . $OUTPUTFILE . "'\n";
+    
   } else {
     $EXTENSION = $_option;
   }
@@ -236,9 +257,17 @@ function downloadExtension( $_extKey, $_version ) {
     file_put_contents( "php://stderr", "File requested: $_extensionUrl\n" );
     exit( 1 );
   }
-  $_tempFileName  = $_t3xName . ".temp";
+  
+  $_tempFileName  = $_t3xName;
+  global $OUTPUTFILE;
+  if( FALSE !== $OUTPUTFILE && "" !== $OUTPUTFILE ) {
+    $_tempFileName = $OUTPUTFILE;
+  }
+  
   file_put_contents( $_tempFileName, $_extensionData );
-  register_shutdown_function( "cleanUpTempFile", &$_tempFileName );
+  if( "" === $OUTPUTFILE ) {
+    register_shutdown_function( "cleanUpTempFile", &$_tempFileName );
+  }
   
   return $_tempFileName;
 }
@@ -362,9 +391,18 @@ function printArray( $array, $indent, $nameIndent ) {
       echo $value;
 
     } else if( is_string( $value ) ) {
-      $_stringValue = quoted_printable_encode( $value );
-      $_stringValueLength = strlen( $_stringValue );
-      echo ( $_stringValueLength > 60 ) ? "String[$_stringValueLength]" : $_stringValue;
+      $_valueLength = strlen( $value );
+      global $STRING_LIMIT;
+      // $STRING_LIMIT is a string due to configuration file interoperability concerns
+      if( !ctype_print( $value ) || ( intval( $STRING_LIMIT ) > 0 && $_valueLength > intval( $STRING_LIMIT ) ) ) {
+        echo "String[$_valueLength]";
+        
+      } else {
+        echo $value;
+      }
+      
+    } else {
+      echo gettype( $value );
     }
     echo "\n";
   }
@@ -403,8 +441,6 @@ if( $EXTRACT === "true" ) {
 } else {
   file_put_contents( "php://stderr", "Skipped.\n" );
 }
-
-
 
 # vim:ts=2:sw=2:expandtab:
 ?>
