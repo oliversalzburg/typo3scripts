@@ -96,7 +96,7 @@ $FORCE_VERSION="";
 # Script Configuration end
 
 // The base location from where to retrieve new versions of this script
-define( "UPDATE_BASE", "http://typo3scripts.googlecode.com/svn/branches/dev" );
+define( "UPDATE_BASE", "http://typo3scripts.googlecode.com/svn/trunk" );
 
 /**
  * Self-update
