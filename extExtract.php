@@ -96,7 +96,7 @@ $FORCE_VERSION="";
 # Script Configuration end
 
 // The base location from where to retrieve new versions of this script
-define( "UPDATE_BASE", "http://typo3scripts.googlecode.com/svn/trunk" );
+define( "UPDATE_BASE", "http://typo3scripts.googlecode.com/svn/branches/dev" );
 
 /**
  * Self-update
@@ -105,6 +105,7 @@ function runSelfUpdate() {
   echo "Performing self-update...\n";
 
   $_tempFileName = INVNAME . ".tmp";
+  $_payloadName  = INVNAME . ".payload";
 
   // Download new version
   echo "Downloading latest version...";
@@ -114,8 +115,9 @@ function runSelfUpdate() {
     echo "File requested: " . UPDATE_BASE . "/" . SELF . "\n";
     exit( 1 );
   }
-  file_put_contents( $_tempFileName, $_fileContents );
+  file_put_contents( $_payloadName, $_fileContents );
   echo "Done.\n";
+  unlink( $_payloadName );
 
   // Copy over modes from old version
   $_octalMode = fileperms( INVNAME );
@@ -130,7 +132,8 @@ function runSelfUpdate() {
 #!/bin/bash
 # Overwrite old file with new
 if mv "$_tempFileName" "$_name"; then
-  echo "Done. Update complete."
+  echo "Done."
+  echo "Update complete."
   rm -- $0
 else
   echo "Failed!"
@@ -223,14 +226,17 @@ foreach( $argv as $_option ) {
 }
 
 // Update check
-$_sumLatest = file_get_contents( UPDATE_BASE . "/versions" );
-$_isListed = preg_match( "/^(?P<sum>[0-9a-zA-Z]{32})\s*" . SELF ."/ms", $_sumLatest, $_ownSumLatest );
+$_contentVersions = file_get_contents( UPDATE_BASE . "/versions" );
+$_contentSelf     = split( "\n", file_get_contents( INVNAME ), 2 );
+$_sumSelf         = md5( $_contentSelf[ 1 ] );
+
+$_isListed = preg_match( "/^" . SELF . " (?P<sum>[0-9a-zA-Z]{32})/ms", $_contentVersions, $_sumLatest );
 if( !$_isListed ) {
   file_put_contents( "php://stderr", "No update information is available for '" . SELF . "'.\n" );
   file_put_contents( "php://stderr", "Please check the project home page http://code.google.com/p/typo3scripts/.\n" );
   
-} else {
-  file_put_contents( "php://stderr", "Update checking isn't yet implemented for '" . SELF . "'.\n" );
+} else if( $_sumLatest != $_sumLatest[ 1 ] ) {
+  file_put_contents( "php://stderr", "NOTE: New version available!\n" );
 }
 
 // Begin main operation
@@ -239,6 +245,11 @@ if( !$_isListed ) {
 if( 0 === strpos( $EXTENSION, "--" ) ) {
   echo "The given extension key '$EXTENSION' looks like a command line parameter.\n";
   echo "Please use the --extension parameter when giving multiple arguments.\n";
+  exit( 1 );
+}
+
+if( "" === $EXTENSION ) {
+  echo "No extension given.\n";
   exit( 1 );
 }
 

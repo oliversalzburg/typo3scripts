@@ -137,6 +137,7 @@ function runSelfUpdate() {
   _interpreter=$(head --lines=1 "$0")
   echo $_interpreter > "$_tempFileName"
   tail --lines=+2 "$_payloadName" >> "$_tempFileName"
+  rm "$_payloadName"
   
   # Copy over modes from old version
   OCTAL_MODE=$(stat -c '%a' $SELF)
@@ -150,7 +151,8 @@ function runSelfUpdate() {
 #!/bin/bash
 # Overwrite old file with new
 if mv "$_tempFileName" "$0"; then
-  echo "Done. Update complete."
+  echo "Done."
+  echo "Update complete."
   rm -- \$0
 else
   echo "Failed!"
