@@ -185,8 +185,8 @@ checkDependency mysqldump
 echo "Succeeded."
 
 # Update check
-SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $1}')
-SUM_SELF=$(md5sum "$0" | awk '{print $1}')
+SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
+SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
 if [[ "" == $SUM_LATEST ]]; then
   echo "No update information is available for '$SELF'" >&2
   echo "Please check the project home page http://code.google.com/p/typo3scripts/." >&2
