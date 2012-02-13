@@ -69,15 +69,21 @@ function runSelfUpdate() {
   echo "Performing self-update..."
   
   _tempFileName="$0.tmp"
+  _payloadName="$0.payload"
   
   # Download new version
   echo -n "Downloading latest version..."
-  if ! wget --quiet --output-document="$_tempFileName" $UPDATE_BASE/$SELF ; then
+  if ! wget --quiet --output-document="$_payloadName" $UPDATE_BASE/$SELF ; then
     echo "Failed: Error while trying to wget new version!"
     echo "File requested: $UPDATE_BASE/$SELF"
     exit 1
   fi
   echo "Done."
+  
+  # Restore shebang
+  _interpreter=$(head --lines=1 "$0")
+  echo $_interpreter > "$_tempFileName"
+  tail --lines=+2 "$_payloadName" >> "$_tempFileName"
   
   # Copy over modes from old version
   OCTAL_MODE=$(stat -c '%a' $SELF)
