@@ -105,8 +105,7 @@ function runSelfUpdate() {
   echo "Performing self-update...\n";
 
   $_tempFileName = INVNAME . ".tmp";
-  $_payloadName  = INVNAME . ".payload";
-
+  
   // Download new version
   echo "Downloading latest version...";
   $_fileContents = @file_get_contents( UPDATE_BASE . "/" . SELF );
@@ -115,10 +114,15 @@ function runSelfUpdate() {
     echo "File requested: " . UPDATE_BASE . "/" . SELF . "\n";
     exit( 1 );
   }
-  file_put_contents( $_payloadName, $_fileContents );
+  $_payload = split( "\n", $_fileContents, 2 );
   echo "Done.\n";
-  unlink( $_payloadName );
-
+  
+  // Restore shebang
+  $_selfContent = split( "\n", file_get_contents( INVNAME ), 2 );
+  $_interpreter = $_selfContent[ 0 ];
+  file_put_contents( $_tempFileName, $_interpreter . "\n" );
+  file_put_contents( $_tempFileName, $_payload[ 1 ], FILE_APPEND );
+  
   // Copy over modes from old version
   $_octalMode = fileperms( INVNAME );
   if( FALSE == chmod( $_tempFileName, $_octalMode ) ) {
@@ -139,9 +143,10 @@ else
   echo "Failed!"
 fi
 EOS;
+  file_put_contents( "updateScript.sh", $_updateScript );
 
   echo "Inserting update process...";
-  pcntl_exec( "updateScript.sh" );
+  pcntl_exec( "/bin/bash", array( "./updateScript.sh" ) );
 }
 
 # Make a quick run through the command line arguments to see if the user wants
