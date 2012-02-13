@@ -1,0 +1,7 @@
+extExtract.php 1e81afa569edb0766be572d6831455c5
+bootstrap.sh aec22a8186f544ccc3c228b0d176dd47
+createBackup.sh b97b153fd711777f5b3961d881228850
+extChangelog.sh 9d1c4410854f6be2a847776f03fe5479
+extUpdate.sh 1196ebf4627aa4b3cf423c5970e5555a
+restoreBackup.sh 20bf20a551fe8a8617b47a9bf46335b8
+switchVersion.sh 8c8937735c62ef0284a432f7b6e79f13
