@@ -147,7 +147,16 @@ EOS;
   file_put_contents( "updateScript.sh", $_updateScript );
 
   echo "Inserting update process...";
-  pcntl_exec( "/bin/bash", array( "./updateScript.sh" ) );
+    file_put_contents( "updateScript.sh", $_updateScript );
+  chmod( "updateScript.sh", 0700 );
+
+  echo "Inserting update process...";
+  if( function_exists( "pcntl_exec" ) ) {
+    pcntl_exec( "/bin/bash", array( "./updateScript.sh" ) );
+    
+  } else {
+    die( exec( "./updateScript.sh" ) );
+  }
 }
 
 # Make a quick run through the command line arguments to see if the user wants
