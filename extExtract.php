@@ -164,7 +164,7 @@ $BASE_CONFIG_FILENAME = "typo3scripts.conf";
 if( file_exists( $BASE_CONFIG_FILENAME ) ) {
   file_put_contents( "php://stderr", "Sourcing script configuration from " . $BASE_CONFIG_FILENAME . "..." );
   $_baseConfig = file_get_contents( $BASE_CONFIG_FILENAME );
-  $_baseConfigFixed = preg_replace( "/^(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_baseConfig );
+  $_baseConfigFixed = preg_replace( "/^(?!\s*$)(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_baseConfig );
   eval( $_baseConfigFixed );
   file_put_contents( "php://stderr", "Done.\n" );
 }
@@ -174,7 +174,7 @@ $CONFIG_FILENAME = substr( SELF, 0, -4 ) . ".conf";
 if( file_exists( $CONFIG_FILENAME ) ) {
   file_put_contents( "php://stderr", "Sourcing script configuration from " . $CONFIG_FILENAME . "..." );
   $_config = file_get_contents( $CONFIG_FILENAME );
-  $_configFixed = preg_replace( "/^(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_config );
+  $_configFixed = preg_replace( "/^(?!\s*$)(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_config );
   eval( $_configFixed );
   file_put_contents( "php://stderr", "Done.\n" );
 }
