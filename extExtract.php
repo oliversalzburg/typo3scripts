@@ -108,6 +108,7 @@ function runSelfUpdate() {
   
   // Download new version
   echo "Downloading latest version...";
+  global $UPDATE_BASE;
   $_fileContents = @file_get_contents( $UPDATE_BASE . "/" . SELF );
   if( strlen( $_fileContents ) <= 0 ) {
     echo "Failed: Error while trying to download new version!\n";
