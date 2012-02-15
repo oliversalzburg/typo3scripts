@@ -150,12 +150,11 @@ EOS;
     file_put_contents( "updateScript.sh", $_updateScript );
   chmod( "updateScript.sh", 0700 );
 
-  echo "Inserting update process...";
   if( function_exists( "pcntl_exec" ) ) {
     pcntl_exec( "/bin/bash", array( "./updateScript.sh" ) );
     
-  } else if( function_exists( "exec" ) ) {
-    die( exec( "./updateScript.sh" ) );
+  } else if( function_exists( "passthru" ) ) {
+    die( passthru( "./updateScript.sh" ) );
     
   } else {
     die( "Please execute ./updateScript.sh now." );
