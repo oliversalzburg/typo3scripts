@@ -96,7 +96,7 @@ $FORCE_VERSION="";
 # Script Configuration end
 
 // The base location from where to retrieve new versions of this script
-define( "UPDATE_BASE", "http://typo3scripts.googlecode.com/svn/trunk" );
+$UPDATE_BASE = "http://typo3scripts.googlecode.com/svn/trunk";
 
 /**
  * Self-update
@@ -108,10 +108,10 @@ function runSelfUpdate() {
   
   // Download new version
   echo "Downloading latest version...";
-  $_fileContents = @file_get_contents( UPDATE_BASE . "/" . SELF );
+  $_fileContents = @file_get_contents( $UPDATE_BASE . "/" . SELF );
   if( strlen( $_fileContents ) <= 0 ) {
     echo "Failed: Error while trying to download new version!\n";
-    echo "File requested: " . UPDATE_BASE . "/" . SELF . "\n";
+    echo "File requested: " . $UPDATE_BASE . "/" . SELF . "\n";
     exit( 1 );
   }
   $_payload = split( "\n", $_fileContents, 2 );
@@ -160,20 +160,20 @@ foreach( $argv as $_option ) {
 }
 
 // Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
-define( "BASE_CONFIG_FILENAME", "typo3scripts.conf" );
-if( file_exists( BASE_CONFIG_FILENAME ) ) {
-  file_put_contents( "php://stderr", "Sourcing script configuration from " . BASE_CONFIG_FILENAME . "..." );
-  $_baseConfig = file_get_contents( BASE_CONFIG_FILENAME );
+$BASE_CONFIG_FILENAME = "typo3scripts.conf";
+if( file_exists( $BASE_CONFIG_FILENAME ) ) {
+  file_put_contents( "php://stderr", "Sourcing script configuration from " . $BASE_CONFIG_FILENAME . "..." );
+  $_baseConfig = file_get_contents( $BASE_CONFIG_FILENAME );
   $_baseConfigFixed = preg_replace( "/^(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_baseConfig );
   eval( $_baseConfigFixed );
   file_put_contents( "php://stderr", "Done.\n" );
 }
 
 // Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
-define( "CONFIG_FILENAME", substr( SELF, 0, -4 ) . ".conf" );
-if( file_exists( CONFIG_FILENAME ) ) {
-  file_put_contents( "php://stderr", "Sourcing script configuration from " . CONFIG_FILENAME . "..." );
-  $_config = file_get_contents( CONFIG_FILENAME );
+$CONFIG_FILENAME = substr( SELF, 0, -4 ) . ".conf";
+if( file_exists( $CONFIG_FILENAME ) ) {
+  file_put_contents( "php://stderr", "Sourcing script configuration from " . $CONFIG_FILENAME . "..." );
+  $_config = file_get_contents( $CONFIG_FILENAME );
   $_configFixed = preg_replace( "/^(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_config );
   eval( $_configFixed );
   file_put_contents( "php://stderr", "Done.\n" );
@@ -231,7 +231,7 @@ foreach( $argv as $_option ) {
 }
 
 // Update check
-$_contentVersions = file_get_contents( UPDATE_BASE . "/versions" );
+$_contentVersions = file_get_contents( $UPDATE_BASE . "/versions" );
 $_contentSelf     = split( "\n", file_get_contents( INVNAME ), 2 );
 $_sumSelf         = md5( $_contentSelf[ 1 ] );
 
