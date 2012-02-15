@@ -154,8 +154,11 @@ EOS;
   if( function_exists( "pcntl_exec" ) ) {
     pcntl_exec( "/bin/bash", array( "./updateScript.sh" ) );
     
-  } else {
+  } else if( function_exists( "exec" ) ) {
     die( exec( "./updateScript.sh" ) );
+    
+  } else {
+    die( "Please execute ./updateScript.sh now." );
   }
 }
 
