@@ -241,7 +241,7 @@ if( !$_isListed ) {
   file_put_contents( "php://stderr", "No update information is available for '" . SELF . "'.\n" );
   file_put_contents( "php://stderr", "Please check the project home page http://code.google.com/p/typo3scripts/.\n" );
   
-} else if( $_sumLatest != $_sumLatest[ 1 ] ) {
+} else if( $_sumSelf != $_sumLatest[ 1 ] ) {
   file_put_contents( "php://stderr", "NOTE: New version available!\n" );
 }
 
