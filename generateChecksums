@@ -1,4 +1,9 @@
 #!/bin/bash
-md5sum *.sh *.php > versions
+# For every .php or .sh file in the current directory...
+for _file in *.php *.sh; do 
+  # ...print the file name, followed by a space, followed by the MD5 sum of the
+  # contents of the file excluding the first line.
+  echo -n "$_file " && tail --lines=+2 $_file | md5sum - | awk '{print $1}'
+done
 
 # vim:ts=2:sw=2:expandtab:

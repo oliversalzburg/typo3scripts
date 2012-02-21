@@ -87,15 +87,22 @@ function runSelfUpdate() {
   echo "Performing self-update..."
   
   _tempFileName="$0.tmp"
+  _payloadName="$0.payload"
   
   # Download new version
   echo -n "Downloading latest version..."
-  if ! wget --quiet --output-document="$_tempFileName" $UPDATE_BASE/$SELF ; then
+  if ! wget --quiet --output-document="$_payloadName" $UPDATE_BASE/$SELF ; then
     echo "Failed: Error while trying to wget new version!"
     echo "File requested: $UPDATE_BASE/$SELF"
     exit 1
   fi
   echo "Done."
+  
+  # Restore shebang
+  _interpreter=$(head --lines=1 "$0")
+  echo $_interpreter > "$_tempFileName"
+  tail --lines=+2 "$_payloadName" >> "$_tempFileName"
+  rm "$_payloadName"
   
   # Copy over modes from old version
   OCTAL_MODE=$(stat -c '%a' $SELF)
@@ -109,7 +116,8 @@ function runSelfUpdate() {
 #!/bin/bash
 # Overwrite old file with new
 if mv "$_tempFileName" "$0"; then
-  echo "Done. Update complete."
+  echo "Done."
+  echo "Update complete."
   rm -- \$0
 else
   echo "Failed!"
@@ -206,8 +214,8 @@ checkDependency mysql
 echo "Succeeded."
 
 # Update check
-SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $1}')
-SUM_SELF=$(md5sum "$0" | awk '{print $1}')
+SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
+SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
 if [[ "" == $SUM_LATEST ]]; then
   echo "No update information is available for '$SELF'" >&2
   echo "Please check the project home page http://code.google.com/p/typo3scripts/." >&2

@@ -1,7 +1,7 @@
-e0566187ce7656558524333433537212  bootstrap.sh
-71fb279e9ed4ee7b90e6f17d9704599b  createBackup.sh
-8d6f0a09ecf4e495a8c638e08df7f091  extChangelog.sh
-62e1138e9f7009f4ea61a6654ac8eed3  extUpdate.sh
-8bc1198684f0f91d556c381ef1e04345  restoreBackup.sh
-b86f7b3527d9318e13d7b4e959831af6  switchVersion.sh
-44be80bde078f812c405ae0f42f9ad60  extExtract.php
+extExtract.php c731256bc13d0085f75cd11c29eeac36
+bootstrap.sh aed349dbd67e096ff789606ff9370f0e
+createBackup.sh 806b7b5777e9e3c22ce77f35caa277ab
+extChangelog.sh e93cbf330c643d690d97f3155bbcacaf
+extUpdate.sh 1243f0c2e39075741874440824ee8800
+restoreBackup.sh 7f7198d96471595344a70e539580348f
+switchVersion.sh b456afb9da7c8dfd6e122e9109ae2b1b

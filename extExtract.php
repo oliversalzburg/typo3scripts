@@ -96,7 +96,7 @@ $FORCE_VERSION="";
 # Script Configuration end
 
 // The base location from where to retrieve new versions of this script
-define( "UPDATE_BASE", "http://typo3scripts.googlecode.com/svn/trunk" );
+$UPDATE_BASE = "http://typo3scripts.googlecode.com/svn/trunk";
 
 /**
  * Self-update
@@ -105,18 +105,25 @@ function runSelfUpdate() {
   echo "Performing self-update...\n";
 
   $_tempFileName = INVNAME . ".tmp";
-
+  
   // Download new version
   echo "Downloading latest version...";
-  $_fileContents = @file_get_contents( UPDATE_BASE . "/" . SELF );
+  global $UPDATE_BASE;
+  $_fileContents = @file_get_contents( $UPDATE_BASE . "/" . SELF );
   if( strlen( $_fileContents ) <= 0 ) {
     echo "Failed: Error while trying to download new version!\n";
-    echo "File requested: " . UPDATE_BASE . "/" . SELF . "\n";
+    echo "File requested: " . $UPDATE_BASE . "/" . SELF . "\n";
     exit( 1 );
   }
-  file_put_contents( $_tempFileName, $_fileContents );
+  $_payload = split( "\n", $_fileContents, 2 );
   echo "Done.\n";
-
+  
+  // Restore shebang
+  $_selfContent = split( "\n", file_get_contents( INVNAME ), 2 );
+  $_interpreter = $_selfContent[ 0 ];
+  file_put_contents( $_tempFileName, $_interpreter . "\n" );
+  file_put_contents( $_tempFileName, $_payload[ 1 ], FILE_APPEND );
+  
   // Copy over modes from old version
   $_octalMode = fileperms( INVNAME );
   if( FALSE == chmod( $_tempFileName, $_octalMode ) ) {
@@ -130,15 +137,28 @@ function runSelfUpdate() {
 #!/bin/bash
 # Overwrite old file with new
 if mv "$_tempFileName" "$_name"; then
-  echo "Done. Update complete."
+  echo "Done."
+  echo "Update complete."
   rm -- $0
 else
   echo "Failed!"
 fi
 EOS;
+  file_put_contents( "updateScript.sh", $_updateScript );
 
   echo "Inserting update process...";
-  pcntl_exec( "updateScript.sh" );
+    file_put_contents( "updateScript.sh", $_updateScript );
+  chmod( "updateScript.sh", 0700 );
+
+  if( function_exists( "pcntl_exec" ) ) {
+    pcntl_exec( "/bin/bash", array( "./updateScript.sh" ) );
+    
+  } else if( function_exists( "passthru" ) ) {
+    die( passthru( "./updateScript.sh" ) );
+    
+  } else {
+    die( "Please execute ./updateScript.sh now." );
+  }
 }
 
 # Make a quick run through the command line arguments to see if the user wants
@@ -152,21 +172,21 @@ foreach( $argv as $_option ) {
 }
 
 // Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
-define( "BASE_CONFIG_FILENAME", "typo3scripts.conf" );
-if( file_exists( BASE_CONFIG_FILENAME ) ) {
-  file_put_contents( "php://stderr", "Sourcing script configuration from " . BASE_CONFIG_FILENAME . "..." );
-  $_baseConfig = file_get_contents( BASE_CONFIG_FILENAME );
-  $_baseConfigFixed = preg_replace( "/^(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_baseConfig );
+$BASE_CONFIG_FILENAME = "typo3scripts.conf";
+if( file_exists( $BASE_CONFIG_FILENAME ) ) {
+  file_put_contents( "php://stderr", "Sourcing script configuration from " . $BASE_CONFIG_FILENAME . "..." );
+  $_baseConfig = file_get_contents( $BASE_CONFIG_FILENAME );
+  $_baseConfigFixed = preg_replace( "/^(?!\s*$)(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_baseConfig );
   eval( $_baseConfigFixed );
   file_put_contents( "php://stderr", "Done.\n" );
 }
 
 // Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
-define( "CONFIG_FILENAME", substr( SELF, 0, -4 ) . ".conf" );
-if( file_exists( CONFIG_FILENAME ) ) {
-  file_put_contents( "php://stderr", "Sourcing script configuration from " . CONFIG_FILENAME . "..." );
-  $_config = file_get_contents( CONFIG_FILENAME );
-  $_configFixed = preg_replace( "/^(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_config );
+$CONFIG_FILENAME = substr( SELF, 0, -4 ) . ".conf";
+if( file_exists( $CONFIG_FILENAME ) ) {
+  file_put_contents( "php://stderr", "Sourcing script configuration from " . $CONFIG_FILENAME . "..." );
+  $_config = file_get_contents( $CONFIG_FILENAME );
+  $_configFixed = preg_replace( "/^(?!\s*$)(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_config );
   eval( $_configFixed );
   file_put_contents( "php://stderr", "Done.\n" );
 }
@@ -223,14 +243,17 @@ foreach( $argv as $_option ) {
 }
 
 // Update check
-$_sumLatest = file_get_contents( UPDATE_BASE . "/versions" );
-$_isListed = preg_match( "/^(?P<sum>[0-9a-zA-Z]{32})\s*" . SELF ."/ms", $_sumLatest, $_ownSumLatest );
+$_contentVersions = file_get_contents( $UPDATE_BASE . "/versions" );
+$_contentSelf     = split( "\n", file_get_contents( INVNAME ), 2 );
+$_sumSelf         = md5( $_contentSelf[ 1 ] );
+
+$_isListed = preg_match( "/^" . SELF . " (?P<sum>[0-9a-zA-Z]{32})/ms", $_contentVersions, $_sumLatest );
 if( !$_isListed ) {
   file_put_contents( "php://stderr", "No update information is available for '" . SELF . "'.\n" );
   file_put_contents( "php://stderr", "Please check the project home page http://code.google.com/p/typo3scripts/.\n" );
   
-} else {
-  file_put_contents( "php://stderr", "Update checking isn't yet implemented for '" . SELF . "'.\n" );
+} else if( $_sumSelf != $_sumLatest[ 1 ] ) {
+  file_put_contents( "php://stderr", "NOTE: New version available!\n" );
 }
 
 // Begin main operation
@@ -239,6 +262,11 @@ if( !$_isListed ) {
 if( 0 === strpos( $EXTENSION, "--" ) ) {
   echo "The given extension key '$EXTENSION' looks like a command line parameter.\n";
   echo "Please use the --extension parameter when giving multiple arguments.\n";
+  exit( 1 );
+}
+
+if( "" === $EXTENSION ) {
+  echo "No extension given.\n";
   exit( 1 );
 }
 
