@@ -15,11 +15,15 @@ function showHelp() {
   
   Core:
   --help              Display this help and exit.
+  --verbose           Display more detailed messages.
+  --quiet             Do not display anything.
+  --force             Perform actions that would otherwise abort the script.
   --update            Tries to update the script to the latest version.
-  --base=PATH         The name of the base path where TYPO3 is 
-                      installed. If no base is supplied, "typo3" is used.
+  --update-check      Checks if a newer version of the script is available.
   --export-config     Prints the default configuration of this script.
   --extract-config    Extracts configuration parameters from TYPO3.
+  --base=PATH         The name of the base path where TYPO3 is 
+                      installed. If no base is supplied, "typo3" is used.
   
   Database:
   --hostname=HOST     The name of the host where the TYPO3 database is running.
@@ -49,6 +53,12 @@ function extractConfig() {
 }
 
 # Script Configuration start
+# Should the script give more detailed feedback?
+VERBOSE=false
+# Should the script surpress all feedback?
+QUIET=false
+# Should the script ignore reasons that would otherwise cause it to abort?
+FORCE=false
 # The base directory where TYPO3 is installed
 BASE=typo3
 # The hostname of the MySQL server that TYPO3 uses
@@ -63,6 +73,19 @@ DB=typo3
 
 # The base location from where to retrieve new versions of this script
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
+
+# Update check
+function updateCheck() {
+  SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
+  SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
+  if [[ "" == $SUM_LATEST ]]; then
+    echo "No update information is available for '$SELF'" >&2
+    echo "Please check the project home page http://code.google.com/p/typo3scripts/." >&2
+    
+  elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
+    echo "NOTE: New version available!" >&2
+  fi
+}
 
 # Self-update
 function runSelfUpdate() {
@@ -141,11 +164,21 @@ fi
 # Read command line arguments (overwrites config file)
 for option in $*; do
   case "$option" in
+    --verbose)
+      VERBOSE=true
+      ;;
+    --quiet)
+      QUIET=true
+      ;;
+    --force)
+      FORCE=true
+      ;;
     --update)
       runSelfUpdate
       ;;
-    --base=*)
-      BASE=$(echo $option | cut -d'=' -f2)
+    --update-check)
+      updateCheck
+      exit $?
       ;;
     --export-config)
       exportConfig
@@ -154,6 +187,9 @@ for option in $*; do
     --extract-config)
       extractConfig
       exit 0
+      ;;
+    --base=*)
+      BASE=$(echo $option | cut -d'=' -f2)
       ;;
     --hostname=*)
       HOST=$(echo $option | cut -d'=' -f2)
@@ -191,17 +227,6 @@ checkDependency awk
 checkDependency tar
 checkDependency mysqldump
 echo "Succeeded."
-
-# Update check
-SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
-SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
-if [[ "" == $SUM_LATEST ]]; then
-  echo "No update information is available for '$SELF'" >&2
-  echo "Please check the project home page http://code.google.com/p/typo3scripts/." >&2
-  
-elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
-  echo "NOTE: New version available!" >&2
-fi
 
 # Begin main operation
 
