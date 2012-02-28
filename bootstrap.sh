@@ -207,17 +207,17 @@ done
 # Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 BASE_CONFIG_FILENAME="typo3scripts.conf"
 if [[ -e "$BASE_CONFIG_FILENAME" ]]; then
-  echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..." >&2
+  $VERBOSE && echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..." >&2
   source $BASE_CONFIG_FILENAME
-  echo "Done." >&2
+  $VERBOSE && echo "Done." >&2
 fi
 
 # Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
 if [[ -e "$CONFIG_FILENAME" ]]; then
-  echo -n "Sourcing script configuration from $CONFIG_FILENAME..." >&2
+  $VERBOSE && echo -n "Sourcing script configuration from $CONFIG_FILENAME..." >&2
   source $CONFIG_FILENAME
-  echo "Done." >&2
+  $VERBOSE && echo "Done." >&2
 fi
 
 # Read command line arguments (overwrites config file)
