@@ -91,7 +91,7 @@ VERSION_FIRST=
 # The last version to list
 VERSION_LAST=
 # Should the first found version be skipped?
-SKIP_FIRST=0
+SKIP_FIRST=false
 # Script Configuration end
 
 # The base location from where to retrieve new versions of this script
@@ -233,7 +233,7 @@ for option in $*; do
       VERSION_LAST=$(echo $option | cut -d'=' -f2)
       ;;
     --skip-first)
-      SKIP_FIRST=1
+      SKIP_FIRST=true
       ;;
     *)
       EXTENSION=$option
@@ -321,7 +321,7 @@ if [[ 0 < $_status ]]; then
 fi
 echo "Done." >&2
 
-_isFirstVersionFound=1
+_isFirstVersionFound=false
 while read _versionEntry; do
   _versionString=$(echo $_versionEntry | cut --delimiter=\| --fields=1 -)
   _uploadDate=$(echo $_versionEntry | cut --delimiter=\| --fields=2 -)
@@ -372,8 +372,8 @@ while read _versionEntry; do
     
   fi
   
-  if [[ 1 == $SKIP_FIRST && 1 == $_isFirstVersionFound ]]; then
-    _isFirstVersionFound=0
+  if [[ true == $SKIP_FIRST && false == $_isFirstVersionFound ]]; then
+    _isFirstVersionFound=true
     continue
   fi
   
