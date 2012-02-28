@@ -305,17 +305,17 @@ echo "Succeeded." >&2
 
 # Begin main operation
 
+# Check default argument validity
+if [[ $VERSION == --* ]]; then
+  echo "The given TYPO3 version '$VERSION' looks like a command line parameter." >&2
+  echo "Please use --help to see a list of available command line parameters." >&2
+  exit 1
+fi
+
 # Check for existing installations
 if [[ -d "$BASE" ]]; then
   echo "A directory named $BASE already exists. $SELF will not overwrite existing content."
   echo "Please remove the folder $BASE manually and run this script again."
-  exit 1
-fi
-
-# Check argument validity
-if [[ $VERSION == --* ]]; then
-  echo "The given TYPO3 version '$VERSION' looks like a command line parameter."
-  echo "Please use the --version parameter when giving multiple arguments."
   exit 1
 fi
 

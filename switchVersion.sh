@@ -220,10 +220,10 @@ echo "Succeeded." >&2
 
 # Begin main operation
 
-# Check argument validity
+# Check default argument validity
 if [[ $VERSION == --* ]]; then
-  echo "The given TYPO3 version '$VERSION' looks like a command line parameter."
-  echo "Please use the --version parameter when giving multiple arguments."
+  echo "The given TYPO3 version '$VERSION' looks like a command line parameter." >&2
+  echo "Please use --help to see a list of available command line parameters." >&2
   exit 1
 fi
 

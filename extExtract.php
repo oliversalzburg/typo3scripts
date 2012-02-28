@@ -291,10 +291,10 @@ foreach( $argv as $_option ) {
 
 // Begin main operation
 
-// Check argument validity
+// Check default argument validity
 if( 0 === strpos( $EXTENSION, "--" ) ) {
-  echo "The given extension key '$EXTENSION' looks like a command line parameter.\n";
-  echo "Please use the --extension parameter when giving multiple arguments.\n";
+  file_put_contents( "php://stderr", "The given extension key '$EXTENSION' looks like a command line parameter.\n" );
+  file_put_contents( "php://stderr", "Please use --help to see a list of available command line parameters.\n" );
   exit( 1 );
 }
 

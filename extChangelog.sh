@@ -263,10 +263,10 @@ echo "Succeeded." >&2
 
 # Begin main operation
 
-# Check argument validity
+# Check default argument validity
 if [[ $EXTENSION == --* ]]; then
   echo "The given extension key '$EXTENSION' looks like a command line parameter." >&2
-  echo "Please use the --extension parameter when giving multiple arguments." >&2
+  echo "Please use --help to see a list of available command line parameters." >&2
   exit 1
 fi
 

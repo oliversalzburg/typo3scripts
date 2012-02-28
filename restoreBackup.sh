@@ -250,15 +250,15 @@ echo "Succeeded." >&2
 
 # Begin main operation
 
-# Check argument validity
-if [[ ! -e "$FILE" ]]; then
-  if [[ $FILE == --* ]]; then
-    echo "The given TYPO3 snapshot '$FILE' looks like a command line parameter."
-    echo "Please use the --file parameter when giving multiple arguments."
-    exit 1
-  fi
+# Check default argument validity
+if [[ $FILE == --* ]]; then
+  echo "The given TYPO3 snapshot '$FILE' looks like a command line parameter." >&2
+  echo "Please use --help to see a list of available command line parameters." >&2
+  exit 1
+fi
   
-  echo "The given snapshot '$FILE' does not exist."
+if [[ ! -e "$FILE" ]]; then  
+  echo "The given snapshot '$FILE' does not exist." >&2
   exit 1
 fi
 
