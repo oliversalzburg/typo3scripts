@@ -116,6 +116,9 @@ function updateCheck() {
   $_contentSelf     = split( "\n", file_get_contents( INVNAME ), 2 );
   $_sumSelf         = md5( $_contentSelf[ 1 ] );
   
+  if( $VERBOSE ) file_put_contents( "php://stderr", "Remote hash source: '" . $UPDATE_BASE . "/versions'\n" );
+  if( $VERBOSE ) file_put_contents( "php://stderr", "Own hash: '" . $SUM_SELF . "' Remote hash: '" . $SUM_LATEST . "'\n" );
+  
   $_isListed = preg_match( "/^" . SELF . " (?P<sum>[0-9a-zA-Z]{32})/ms", $_contentVersions, $_sumLatest );
   if( !$_isListed ) {
     file_put_contents( "php://stderr", "No update information is available for '" . SELF . "'.\n" );

@@ -71,13 +71,20 @@ VERSION=4.6.4
 # The base location from where to retrieve new versions of this script
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
+# The base location from where to retrieve new versions of this script
+UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
+
 # Update check
 function updateCheck() {
   SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
   SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
+  
+  $VERBOSE && echo "Remote hash source: '$UPDATE_BASE/versions'" >&2
+  $VERBOSE && echo "Own hash: '$SUM_SELF' Remote hash: '$SUM_LATEST'" >&2
+  
   if [[ "" == $SUM_LATEST ]]; then
     echo "No update information is available for '$SELF'" >&2
-    echo "Please check the project home page http://code.google.com/p/typo3scripts/." >&2
+    echo "Please check the project home page 'http://code.google.com/p/typo3scripts/'." >&2
     return 2
     
   elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
