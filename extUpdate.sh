@@ -235,13 +235,16 @@ done
 
 # Check for dependencies
 function checkDependency() {
+  $VERBOSE && echo -n "Checking dependency '$1' => " >&2
   if ! hash $1 2>&-; then
     echo "Failed!" >&2
     echo "This script requires '$1' but it can not be found. Aborting." >&2
     exit 1
   fi
+  $VERBOSE && echo $(which $1)
 }
 echo -n "Checking dependencies..." >&2
+$VERBOSE && echo
 checkDependency mysql
 checkDependency sed
 echo "Succeeded." >&2
