@@ -298,7 +298,7 @@ if( 0 === strpos( $EXTENSION, "--" ) ) {
 }
 
 if( "" === $EXTENSION ) {
-  echo "No extension given.\n";
+  file_put_contents( "php://stderr", "No extension given.\n" );
   exit( 1 );
 }
 

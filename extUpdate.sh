@@ -241,10 +241,11 @@ function checkDependency() {
     echo "This script requires '$1' but it can not be found. Aborting." >&2
     exit 1
   fi
-  $VERBOSE && echo $(which $1)
+  $VERBOSE && echo $(which $1) >&2
+  return 0
 }
 echo -n "Checking dependencies..." >&2
-$VERBOSE && echo
+$VERBOSE && echo >&2
 checkDependency mysql
 checkDependency sed
 echo "Succeeded." >&2

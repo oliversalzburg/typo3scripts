@@ -234,10 +234,11 @@ function checkDependency() {
     echo "This script requires '$1' but it can not be found. Aborting." >&2
     exit 1
   fi
-  $VERBOSE && echo $(which $1)
+  $VERBOSE && echo $(which $1) >&2
+  return 0
 }
 echo -n "Checking dependencies..." >&2
-$VERBOSE && echo
+$VERBOSE && echo >&2
 checkDependency wget
 checkDependency curl
 checkDependency md5sum
@@ -264,20 +265,22 @@ fi
 
 # Does the base directory exist?
 if [[ ! -d $BASE ]]; then
-  echo "The base directory '$BASE' does not seem to exist!"
+  echo "The base directory '$BASE' does not seem to exist!" >&2
   exit 1
 fi
+
 # Is the base directory writeable?
 if [[ ! -w $BASE ]]; then
-  echo "The base directory '$BASE' is not writeable!"
+  echo "The base directory '$BASE' is not writeable!" >&2
   exit 1
 fi
+
 # Check if we can delete the target base folder
-echo -n "Testing write permissions in $BASE..."
-if ! find $BASE \( -exec test -w {} \; -o \( -exec echo {} \; -quit \) \) | xargs -I {} bash -c "if [ -n "{}" ]; then echo Failed\!; echo {} is not writable\!; exit 1; fi"; then
+echo -n "Testing write permissions in $BASE..." >&2
+if ! find $BASE \( -exec test -w {} \; -o \( -exec echo {} \; -quit \) \) | xargs -I {} bash -c "if [ -n "{}" ]; then echo Failed\! >&2; echo {} is not writable\! >&2; exit 1; fi"; then
   exit 1
 fi
-echo "Succeeded"
+echo "Succeeded" >&2
 
 echo -n "Erasing current TYPO3 installation '$BASE'..."
 if ! rm --recursive --force -- $BASE > /dev/null; then

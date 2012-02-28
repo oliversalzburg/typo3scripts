@@ -290,10 +290,11 @@ function checkDependency() {
     echo "This script requires '$1' but it can not be found. Aborting." >&2
     exit 1
   fi
-  $VERBOSE && echo $(which $1)
+  $VERBOSE && echo $(which $1) >&2
+  return 0
 }
 echo -n "Checking dependencies..." >&2
-$VERBOSE && echo
+$VERBOSE && echo >&2
 checkDependency wget
 checkDependency curl
 checkDependency md5sum
@@ -314,8 +315,8 @@ fi
 
 # Check for existing installations
 if [[ -d "$BASE" ]]; then
-  echo "A directory named $BASE already exists. $SELF will not overwrite existing content."
-  echo "Please remove the folder $BASE manually and run this script again."
+  echo "A directory named $BASE already exists. $SELF will not overwrite existing content." >&2
+  echo "Please remove the folder $BASE manually and run this script again." >&2
   exit 1
 fi
 
@@ -323,7 +324,7 @@ fi
 if [[ "$(id -u)" != "0" ]]; then
   if ! $SKIP_RIGHTS; then
     SKIP_RIGHTS=true
-    echo "Adjusting access rights for the target installation will be skipped because this script is not running with root privileges!"
+    echo "Adjusting access rights for the target installation will be skipped because this script is not running with root privileges!" >&2
   fi
 fi
 
