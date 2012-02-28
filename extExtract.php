@@ -282,7 +282,6 @@ foreach( $argv as $_option ) {
     } else {
       $OUTPUTFILE = substr( $_option, $_equalSignIndex + 1 );
     }
-    echo "Output file ='" . $OUTPUTFILE . "'\n";
     
   } else {
     $EXTENSION = $_option;
