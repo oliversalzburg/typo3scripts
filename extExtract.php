@@ -120,10 +120,13 @@ function updateCheck() {
   if( !$_isListed ) {
     file_put_contents( "php://stderr", "No update information is available for '" . SELF . "'.\n" );
     file_put_contents( "php://stderr", "Please check the project home page http://code.google.com/p/typo3scripts/.\n" );
+    return 2
     
   } else if( $_sumSelf != $_sumLatest[ 1 ] ) {
     file_put_contents( "php://stderr", "NOTE: New version available!\n" );
+    return 1
   }
+  return 0
 }
 
 /**
@@ -175,7 +178,7 @@ EOS;
   file_put_contents( "updateScript.sh", $_updateScript );
 
   echo "Inserting update process...";
-    file_put_contents( "updateScript.sh", $_updateScript );
+  file_put_contents( "updateScript.sh", $_updateScript );
   chmod( "updateScript.sh", 0700 );
 
   if( function_exists( "pcntl_exec" ) ) {

@@ -81,10 +81,14 @@ function updateCheck() {
   if [[ "" == $SUM_LATEST ]]; then
     echo "No update information is available for '$SELF'" >&2
     echo "Please check the project home page http://code.google.com/p/typo3scripts/." >&2
+    return 2
     
   elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
     echo "NOTE: New version available!" >&2
+    return 1
   fi
+  
+  return 0
 }
 
 # Self-update
