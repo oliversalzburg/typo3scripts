@@ -285,12 +285,12 @@ done
 # Check for dependencies
 function checkDependency() {
   if ! hash $1 2>&-; then
-    echo "Failed!"
+    echo "Failed!" >&2
     echo "This script requires '$1' but it can not be found. Aborting." >&2
     exit 1
   fi
 }
-echo -n "Checking dependencies..."
+echo -n "Checking dependencies..." >&2
 checkDependency wget
 checkDependency curl
 checkDependency md5sum
@@ -298,7 +298,7 @@ checkDependency sha1sum
 checkDependency grep
 checkDependency awk
 checkDependency tar
-echo "Succeeded."
+echo "Succeeded." >&2
 
 # Begin main operation
 
