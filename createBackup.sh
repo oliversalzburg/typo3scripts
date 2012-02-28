@@ -52,6 +52,14 @@ function extractConfig() {
   echo DB=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db = ')[^']*(?=';)")
 }
 
+# Check on minimal command line argument count
+REQUIRED_ARGUMENT_COUNT=0
+if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
+  echo "Insufficient command line arguments!" >&2
+  echo "Use $0 --help to get additional information." >&2
+  exit 1
+fi
+
 # Script Configuration start
 # Should the script give more detailed feedback?
 VERBOSE=false

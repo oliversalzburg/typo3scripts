@@ -11,7 +11,7 @@ SELF=$(basename "$0")
 # Show the help for this script
 function showHelp() {
   cat << EOF
-  Usage: $0 [OPTIONS --file=<FILE>]|<FILE>
+  Usage: $0 [OPTIONS] [--file=]<FILE>
   
   Core:
   --help              Display this help and exit.
@@ -83,9 +83,6 @@ PASS=*password*
 # The name of the database in which TYPO3 is stored
 DB=typo3
 #Script Configuration end
-
-# The base location from where to retrieve new versions of this script
-UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
 # The base location from where to retrieve new versions of this script
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk

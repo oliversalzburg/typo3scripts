@@ -11,7 +11,7 @@ SELF=$(basename "$0")
 # Show the help for this script
 function showHelp() {
   cat << EOF
-  Usage: $0 [OPTIONS --version=<VERSION>]|<VERSION>
+  Usage: $0 [OPTIONS]
   
   Core:
   --help              Display this help and exit.
@@ -48,7 +48,7 @@ function extractConfig() {
 }
 
 # Check on minimal command line argument count
-REQUIRED_ARGUMENT_COUNT=1
+REQUIRED_ARGUMENT_COUNT=0
 if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
   echo "Insufficient command line arguments!"
   echo "Use $0 --help to get additional information."
@@ -67,9 +67,6 @@ BASE=typo3
 # The version to switch to
 VERSION=4.6.4
 # Script Configuration end
-
-# The base location from where to retrieve new versions of this script
-UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
 # The base location from where to retrieve new versions of this script
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk

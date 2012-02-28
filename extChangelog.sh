@@ -97,9 +97,6 @@ SKIP_FIRST=false
 # The base location from where to retrieve new versions of this script
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
-# The base location from where to retrieve new versions of this script
-UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
-
 # Update check
 function updateCheck() {
   SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
