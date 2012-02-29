@@ -335,31 +335,31 @@ VERSION_FILENAME=$VERSION_NAME.tar.gz
 # The location where the package can be downloaded
 TYPO3_DOWNLOAD_URL=http://prdownloads.sourceforge.net/typo3/$VERSION_FILENAME
 
-echo -n "Looking for TYPO3 package at $VERSION_FILENAME..."
+$VERBOSE && echo -n "Looking for TYPO3 package at $VERSION_FILENAME..." >&2
 if [[ ! -e "$VERSION_FILENAME" ]]; then
-  echo "NOT found!"
-  echo -n "Downloading $TYPO3_DOWNLOAD_URL..."
+  $VERBOSE && echo "NOT found!" >&2
+  echo -n "Downloading $TYPO3_DOWNLOAD_URL..." >&2
   wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILENAME
 else
-  echo "Found!"
-  echo -n "Trying to resume download from $TYPO3_DOWNLOAD_URL..."
+  $VERBOSE && echo "Found!" >&2
+  echo -n "Trying to resume download from $TYPO3_DOWNLOAD_URL..." >&2
   wget --quiet --continue $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILENAME
 fi
-echo "Done."
+echo "Done." >&2
 
-echo -n "Extracting TYPO3 package $VERSION_FILENAME..."
+echo -n "Extracting TYPO3 package $VERSION_FILENAME..." >&2
 if ! tar --extract --gzip --file $VERSION_FILENAME; then
-  echo "Failed!"
+  echo "Failed!" >&2
   exit 1
 fi
-echo "Done."
+echo "Done." >&2
 
-echo -n "Moving TYPO3 package to $BASE..."
+echo -n "Moving TYPO3 package to $BASE..." >&2
 if ! mv $VERSION_NAME $BASE; then
-  echo "Failed!"
+  echo "Failed!" >&2
   exit 1
 fi
-echo "Done."
+echo "Done." >&2
 
 # Generate configuration
 
