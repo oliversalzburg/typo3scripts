@@ -282,34 +282,34 @@ if ! find $BASE \( -exec test -w {} \; -o \( -exec echo {} \; -quit \) \) | xarg
 fi
 echo "Succeeded" >&2
 
-echo -n "Erasing current TYPO3 installation '$BASE'..."
+echo -n "Erasing current TYPO3 installation '$BASE'..." >&2
 if ! rm --recursive --force -- $BASE > /dev/null; then
-  echo "Failed!"
+  echo "Failed!" >&2
   exit 1
 fi
-echo "Done."
+echo "Done." >&2
 
-echo -n "Extracting TYPO3 backup '$FILE'..."
+echo -n "Extracting TYPO3 backup '$FILE'..." >&2
 if ! tar --extract --gzip --file $FILE > /dev/null; then
-  echo "Failed!"
+  echo "Failed!" >&2
   exit 1
 fi
-echo "Done."
+echo "Done." >&2
 
-echo -n "Importing database dump..."
+echo -n "Importing database dump..." >&2
 set +e errexit
 _errorMessage=$(mysql --host=$HOST --user=$USER --password=$PASS --default-character-set=utf8 $DB < $BASE/database.sql 2>&1 >/dev/null)
 _status=$?
 set -e errexit
 if [[ 0 < $_status ]]; then
-  echo "Failed!"
-  echo "Error: $_errorMessage"
+  echo "Failed!" >&2
+  echo "Error: $_errorMessage" >&2
   exit 1
 fi
-echo "Done."
+echo "Done." >&2
 
-echo -n "Deleting database dump..."
+$VERBOSE && echo -n "Deleting database dump..." >&2
 rm --force -- $BASE/database.sql
-echo "Done!"
+$VERBOSE && echo "Done!" >&2
 
 # vim:ts=2:sw=2:expandtab:

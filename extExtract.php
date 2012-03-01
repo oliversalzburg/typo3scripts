@@ -488,10 +488,12 @@ if( $EXTRACT === "true" ) {
     // is_dir() and mkdir() seem highly unreliable in their return values,
     // so we must ignore failures on mkdir() and have to catch issues later.
     if( FALSE === is_dir( $_fullPathName ) ) {
+      if( $VERBOSE ) && file_put_contents( "php://stderr", "Creating directory '$_fullPathName'.\n" );
       @mkdir( $_fullPathName, 0700, true );
     }
     
     $_fullFileName = $OUTPUTDIR . "/" . $_file[ "name" ];
+    if( $VERBOSE ) && file_put_contents( "php://stderr", "Writing file '$_fullFileName'.\n" );
     if( FALSE === file_put_contents( $_fullFileName, $_file[ "content" ] ) ) {
       file_put_contents( "php://stderr", "Error: Failed to write file '$_fullFileName'.\n" );
     }

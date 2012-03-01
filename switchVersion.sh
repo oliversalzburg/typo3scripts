@@ -228,79 +228,82 @@ if [[ $VERSION == --* ]]; then
   exit 1
 fi
 
-VERSION_FILENAME=typo3_src-$VERSION.tar.gz
+# The name of the package
+VERSION_NAME=typo3_src-$VERSION
+# The name of the file that contains the package
+VERSION_FILENAME=$VERSION_NAME.tar.gz
+# The location where the package can be downloaded
 TYPO3_DOWNLOAD_URL=http://prdownloads.sourceforge.net/typo3/$VERSION_FILENAME
 VERSION_FILE=$BASE/$VERSION_FILENAME
 VERSION_DIRNAME=typo3_src-$VERSION
 VERSION_DIR=$BASE/$VERSION_DIRNAME/
 SYMLINK=$BASE/typo3_src
 
-echo -n "Looking for TYPO3 source package at $VERSION_DIR..."
+$VERBOSE && echo -n "Looking for TYPO3 source package at '$VERSION_DIR'..." >&2
 if [[ -d "$VERSION_DIR" ]]; then
-  echo "Found!"
+  $VERBOSE && echo "Found!" >&2
 else
   # Retrieve TYPO3 source package
   if [[ -e "$VERSION_FILE" ]]; then
-    echo "NOT found!"
-    echo "Archive already exists. Trying to resume download."
-    echo -n "Downloading $TYPO3_DOWNLOAD_URL..."
+    $VERBOSE && echo "NOT found!" >&2
+    echo "Archive already exists. Trying to resume download." >&2
+    echo -n "Downloading $TYPO3_DOWNLOAD_URL..." >&2
     if ! wget --quiet --continue $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE; then
-      echo "Failed!"
+      echo "Failed!" >&2
       exit 1
     fi
   else
-    echo "NOT found! Downloading."
-    echo -n "Downloading $TYPO3_DOWNLOAD_URL..."
+    $VERBOSE && echo "NOT found! Downloading." >&2
+    echo -n "Downloading $TYPO3_DOWNLOAD_URL..." >&2
     if ! wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE; then
-      echo "Failed!"
+      echo "Failed!" >&2
       exit 1
     fi
   fi
-  echo "Done."
+  echo "Done." >&2
 
-  echo -n "Extracting source package $VERSION_FILE..."
+  echo -n "Extracting source package $VERSION_FILE..." >&2
   if ! tar --extract --gzip --directory $BASE --file $VERSION_FILE; then
-    echo "Failed!"
+    echo "Failed!" >&2
     exit 1
   fi
-  echo "Done."
+  echo "Done." >&2
 fi
 
 # Switch symlink
-echo -n "Switching TYPO3 source symlink to $VERSION_DIR..."
+echo -n "Switching TYPO3 source symlink to $VERSION_DIR..." >&2
 if ! rm --force -- $SYMLINK; then
-  echo "Failed! Unable to remove old symlink '$SYMLINK'"
+  echo "Failed! Unable to remove old symlink '$SYMLINK'" >&2
   exit 1
 fi
 if ! ln --symbolic $VERSION_DIRNAME $SYMLINK; then
-  echo "Failed! Unable to create new symlink '$SYMLINK'"
+  echo "Failed! Unable to create new symlink '$SYMLINK'" >&2
   exit 1
 fi
-echo "Done."
+echo "Done." >&2
 
 # Check if index.php is a file or a symlink
 # If it is a file, it is an indication of a bootstrap.sh installation using
 # the --fix-indexphp parameter.
 INDEX_PHP=$BASE/index.php
 INDEX_TARGET=$SYMLINK/index.php
-echo -n "Checking if index.php needs to be updated..."
+$VERBOSE && echo -n "Checking if index.php needs to be updated..." >&2
 if [[ -h "$INDEX_PHP" ]]; then
   rm -f "$INDEX_PHP"
   cp "$INDEX_TARGET" "$INDEX_PHP"
-  echo "Done."
+  $VERBOSE && echo "Done." >&2
 else
-  echo "Skipped."
+  $VERBOSE && echo "Skipped." >&2
 fi
 
-
 # Delete old, cached files
-echo -n "Deleting temp_CACHED_* files from typo3conf..."
+$VERBOSE && echo -n "Deleting temp_CACHED_* files from typo3conf..." >&2
 if ! rm --force -- $BASE/typo3conf/temp_CACHED_*; then
-  echo "Failed!"
+  $VERBOSE && echo "Failed!" >&2
   # No need to exit. Failing to delete cache files is not critical to operation
 fi
 
-echo "Done!"
-echo "Version switched to $VERSION."
+echo "Done!" >&2
+echo "Version switched to $VERSION." >&2
 
 # vim:ts=2:sw=2:expandtab:

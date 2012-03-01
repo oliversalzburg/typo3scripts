@@ -264,46 +264,48 @@ fi
 # Filename for snapshot
 FILE=$BASE-$(date +%Y-%m-%d-%H-%M).tgz
 
-echo "Creating TYPO3 backup '$FILE'..."
+echo "Creating TYPO3 backup '$FILE'..." >&2
 
 # Create database dump
-echo -n "Creating database dump at $BASE/database.sql..."
+echo -n "Creating database dump at '$BASE/database.sql'..." >&2
 set +e errexit
 _errorMessage=$(mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database --databases $DB 2>&1 > $BASE/database.sql)
 _status=$?
 set -e errexit
 if [[ 0 < $_status ]]; then
-  echo "Failed!"
-  echo "Error: $_errorMessage"
+  echo "Failed!" >&2
+  echo "Error: $_errorMessage" >&2
   exit 1
 fi
-echo "Done."
+echo "Done." >&2
 
 
 # Create backup archive
 _statusMessage="Compressing TYPO3 installation..."
-echo -n $_statusMessage
+echo -n $_statusMessage >&2
 if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
-  echo
+  echo "" >&2
   _folderSize=`du --summarize --bytes $BASE | cut --fields 1`
   if ! tar --create --file - $BASE | pv --progress --rate --bytes --size $_folderSize | gzip --best > $FILE; then
-    echo "Failed!"
+    echo "Failed!" >&2
     exit 1
   fi
   # Clear pv output and position cursor after status message
+  # If stderr was redirected from the console, this messes up the prompt.
+  # It's unfortunate, but ignored for the time being
   tput cuu 2 && tput cuf ${#_statusMessage} && tput ed
 else
   if ! tar --create --gzip --file $FILE $BASE; then
-    echo "Failed!"
+    echo "Failed!" >&2
     exit 1
   fi
 fi
 
-echo "Done."
+echo "Done." >&2
 
 # Now that the database dump is packed up, delete it
-echo -n "Deleting database dump..."
+$VERBOSE && echo -n "Deleting database dump..." >&2
 rm --force -- $BASE/database.sql
-echo "Done!"
+$VERBOSE && echo "Done!" >&2
 
 # vim:ts=2:sw=2:expandtab:

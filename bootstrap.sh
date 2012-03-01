@@ -328,7 +328,7 @@ if [[ "$(id -u)" != "0" ]]; then
   fi
 fi
 
-# The name of the package and the folder it will live in
+# The name of the package
 VERSION_NAME=blankpackage-$VERSION
 # The name of the file that contains the package
 VERSION_FILENAME=$VERSION_NAME.tar.gz
@@ -369,11 +369,11 @@ function newLineOnce() {
   if $_NEWLINE_PRINTED; then
       return
   fi
-  echo
+  echo "" >&2
   _NEWLINE_PRINTED=true
 }
 
-echo -n "Generating localconf.php..."
+echo -n "Generating localconf.php..." >&2
 TYPO3_CONFIG=
 
 # Add database configuration
@@ -394,7 +394,7 @@ TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['BE']['installToolPassword'] = '$IN
 if ! $SKIP_GM_DETECT; then
   if ! hash gm 2>&-; then
     newLineOnce
-    echo "  Could not find GraphicsMagick binary. im_version_5 will not be set."
+    echo "  Could not find GraphicsMagick binary. im_version_5 will not be set." >&2
   else
     LOCATION_GM=$(which gm)
     TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['GFX']['im_version_5'] = '$LOCATION_GM';\n"
@@ -405,7 +405,7 @@ fi
 if ! $SKIP_UNZIP_DETECT; then
   if ! hash unzip 2>&-; then
     newLineOnce
-    echo "  Could not find unzip binary. unzip_path will not be set."
+    echo "  Could not find unzip binary. unzip_path will not be set." >&2
   else
     LOCATION_UNZIP=$(which unzip)
     TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['BE']['unzip_path'] = '$LOCATION_UNZIP';\n"
@@ -414,48 +414,48 @@ fi
 
 # Write configuration
 if ! cp $BASE/typo3conf/localconf.php $BASE/typo3conf/localconf.php.orig; then
-  echo "Failed! Unable to create copy of localconf.php"
+  echo "Failed! Unable to create copy of localconf.php" >&2
   exit 1
 fi
 
 if ! sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/localconf.php.orig > $BASE/typo3conf/localconf.php; then
-  echo "Failed! Unable to modify localconf.php"
+  echo "Failed! Unable to modify localconf.php" >&2
   exit 1
 fi
-echo "Done."
+echo "Done." >&2
 
 # Enable install tool
-$VERBOSE && echo -n "Enabling install tool..."
+$VERBOSE && echo -n "Enabling install tool..." >&2
 touch "$BASE/typo3conf/FIRST_INSTALL"
-$VERBOSE && echo "Done."
+$VERBOSE && echo "Done." >&2
 
 # Fix permissions
 if ! $SKIP_RIGHTS; then
-  echo -n "Adjusting access permissions for TYPO3 installation..."
+  echo -n "Adjusting access permissions for TYPO3 installation..." >&2
   if ! $(id --group $HTTPD_GROUP > /dev/null); then
-    echo "Failed! The supplied group '$HTTPD_GROUP' is not known on the system."
+    echo "Failed! The supplied group '$HTTPD_GROUP' is not known on the system." >&2
     exit 1
   else
-    $VERBOSE && echo
-    $VERBOSE && echo "Changing owner of '$BASE' to '$OWNER'..."
+    $VERBOSE && echo "" >&2
+    $VERBOSE && echo "Changing owner of '$BASE' to '$OWNER'..." >&2
     sudo chown --recursive $OWNER $BASE
-    $VERBOSE && echo "Changing group of core TYPO3 folders to '$HTTPD_GROUP'..."
+    $VERBOSE && echo "Changing group of core TYPO3 folders to '$HTTPD_GROUP'..." >&2
     sudo chgrp --recursive $HTTPD_GROUP $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
-    $VERBOSE && echo "Changing access rights of core TYPO3 folders..."
+    $VERBOSE && echo "Changing access rights of core TYPO3 folders..." >&2
     sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
   fi
-  echo "Done."
+  echo "Done." >&2
 fi
 
 # Fix index.php
 if $FIX_INDEXPHP; then
-  echo -n "Replacing index.php symlink with copy of original file..."
+  echo -n "Replacing index.php symlink with copy of original file..." >&2
   rm -f "$BASE/index.php"
   cp "$BASE/typo3_src/index.php" "$BASE/index.php"
-  echo "Done."
+  echo "Done." >&2
 fi
 
-echo
-echo "Your TYPO3 Install Tool password is: '$INSTALL_TOOL_PASSWORD'"
+echo "" >&2
+echo "Your TYPO3 Install Tool password is: '$INSTALL_TOOL_PASSWORD'" >&2
 
 # vim:ts=2:sw=2:expandtab:
