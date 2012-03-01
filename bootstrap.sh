@@ -335,26 +335,26 @@ VERSION_FILENAME=$VERSION_NAME.tar.gz
 # The location where the package can be downloaded
 TYPO3_DOWNLOAD_URL=http://prdownloads.sourceforge.net/typo3/$VERSION_FILENAME
 
-$VERBOSE && echo -n "Looking for TYPO3 package at $VERSION_FILENAME..." >&2
+$VERBOSE && echo -n "Looking for TYPO3 package at '$VERSION_FILENAME'..." >&2
 if [[ ! -e "$VERSION_FILENAME" ]]; then
   $VERBOSE && echo "NOT found!" >&2
   echo -n "Downloading $TYPO3_DOWNLOAD_URL..." >&2
   wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILENAME
 else
   $VERBOSE && echo "Found!" >&2
-  echo -n "Trying to resume download from $TYPO3_DOWNLOAD_URL..." >&2
+  echo -n "Trying to resume download from '$TYPO3_DOWNLOAD_URL'..." >&2
   wget --quiet --continue $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILENAME
 fi
 echo "Done." >&2
 
-echo -n "Extracting TYPO3 package $VERSION_FILENAME..." >&2
+echo -n "Extracting TYPO3 package '$VERSION_FILENAME'..." >&2
 if ! tar --extract --gzip --file $VERSION_FILENAME; then
   echo "Failed!" >&2
   exit 1
 fi
 echo "Done." >&2
 
-echo -n "Moving TYPO3 package to $BASE..." >&2
+echo -n "Moving TYPO3 package to '$BASE'..." >&2
 if ! mv $VERSION_NAME $BASE; then
   echo "Failed!" >&2
   exit 1
@@ -425,9 +425,9 @@ fi
 echo "Done."
 
 # Enable install tool
-echo -n "Enabling install tool..."
+$VERBOSE && echo -n "Enabling install tool..."
 touch "$BASE/typo3conf/FIRST_INSTALL"
-echo "Done."
+$VERBOSE && echo "Done."
 
 # Fix permissions
 if ! $SKIP_RIGHTS; then
@@ -436,8 +436,12 @@ if ! $SKIP_RIGHTS; then
     echo "Failed! The supplied group '$HTTPD_GROUP' is not known on the system."
     exit 1
   else
+    $VERBOSE && echo
+    $VERBOSE && echo "Changing owner of '$BASE' to '$OWNER'..."
     sudo chown --recursive $OWNER $BASE
+    $VERBOSE && echo "Changing group of core TYPO3 folders to '$HTTPD_GROUP'..."
     sudo chgrp --recursive $HTTPD_GROUP $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
+    $VERBOSE && echo "Changing access rights of core TYPO3 folders..."
     sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
   fi
   echo "Done."
