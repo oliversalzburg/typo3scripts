@@ -50,8 +50,8 @@ function extractConfig() {
 # Check on minimal command line argument count
 REQUIRED_ARGUMENT_COUNT=0
 if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
-  echo "Insufficient command line arguments!"
-  echo "Use $0 --help to get additional information."
+  echo "Insufficient command line arguments!" >&2
+  echo "Use $0 --help to get additional information." >&2
   exit 1
 fi
 
@@ -73,6 +73,11 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
 # Update check
 function updateCheck() {
+  if ! hash curl 2>&-; then
+    consoleWriteLine "Update checking requires curl. Check skipped." >&2
+    return 2
+  fi
+  
   SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
   SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
   

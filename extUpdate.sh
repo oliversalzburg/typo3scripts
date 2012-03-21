@@ -93,6 +93,11 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
 # Update check
 function updateCheck() {
+  if ! hash curl 2>&-; then
+    consoleWriteLine "Update checking requires curl. Check skipped." >&2
+    return 2
+  fi
+  
   SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
   SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
   
