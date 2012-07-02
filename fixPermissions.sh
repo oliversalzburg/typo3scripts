@@ -272,8 +272,8 @@ sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf
 consoleWriteLine "Done"
 
 consoleWrite "Fixing access to common files..."
-sudo chgrp $HTTPD_GROUP $BASE/.htaccess $BASE/.htpasswd $BASE/favicon.ico
-sudo chmod g+r $BASE/.htaccess $BASE/.htpasswd $BASE/favicon.ico
+sudo chgrp $HTTPD_GROUP $BASE/.htaccess $BASE/.htpasswd $BASE/favicon.ico 2> /dev/null || true
+sudo chmod g+r $BASE/.htaccess $BASE/.htpasswd $BASE/favicon.ico 2> /dev/null || true
 consoleWriteLine "Done"
 
 consoleWrite "Fixing access to TYPO3 source packages..."
