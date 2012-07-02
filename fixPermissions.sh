@@ -259,7 +259,24 @@ checkDependency chmod
 consoleWriteLine "Succeeded."
 
 # Begin main operation
-
+consoleWrite "Changing ownership of '$BASE' to '$OWNER'..."
 sudo chown --recursive $OWNER $BASE
-sudo chgrp --recursive $HTTPD_GROUP $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
+consoleWriteLine "Done"
+
+consoleWrite "Changing owning group of essential TYPO3 folders to '$HTTPD_GROUP'..."
+sudo chgrp --recursive $HTTPD_GROUP $BASE $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
+consoleWriteLine "Done"
+
+consoleWrite "Changing access permissions for essential TYPO3 folders..."
 sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
+consoleWriteLine "Done"
+
+consoleWrite "Fixing access to common files..."
+sudo chgrp $HTTPD_GROUP $BASE/.htaccess $BASE/.htpasswd $BASE/favicon.ico
+sudo chmod g+r $BASE/.htaccess $BASE/.htpasswd $BASE/favicon.ico
+consoleWriteLine "Done"
+
+consoleWrite "Fixing access to TYPO3 source packages..."
+sudo chgrp --recursive $HTTPD_GROUP $BASE/typo3_src*
+sudo chmod g+rX $BASE/typo3_src*
+consoleWriteLine "Done"
