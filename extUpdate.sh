@@ -88,6 +88,23 @@ EXTENSION=
 DISPLAY_CHANGELOG=0
 # Script Configuration end
 
+function consoleWrite() {
+  [ "false" == "$QUIET" ] && echo -n $* >&2
+  return 0
+}
+function consoleWriteLine() {
+  [ "false" == "$QUIET" ] && echo $* >&2
+  return 0
+}
+function consoleWriteVerbose() {
+  $VERBOSE && consoleWrite $*
+  return 0
+}
+function consoleWriteLineVerbose() {
+  $VERBOSE && consoleWriteLine $*
+  return 0
+}
+
 # The base location from where to retrieve new versions of this script
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
@@ -101,16 +118,16 @@ function updateCheck() {
   SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
   SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
   
-  $VERBOSE && echo "Remote hash source: '$UPDATE_BASE/versions'" >&2
-  $VERBOSE && echo "Own hash: '$SUM_SELF' Remote hash: '$SUM_LATEST'" >&2
+  consoleWriteLineVerbose "Remote hash source: '$UPDATE_BASE/versions'"
+  consoleWriteLineVerbose "Own hash: '$SUM_SELF' Remote hash: '$SUM_LATEST'"
   
   if [[ "" == $SUM_LATEST ]]; then
-    echo "No update information is available for '$SELF'" >&2
-    echo "Please check the project home page 'http://code.google.com/p/typo3scripts/'." >&2
+    consoleWriteLine "No update information is available for '$SELF'"
+    consoleWriteLine "Please check the project home page 'http://code.google.com/p/typo3scripts/'."
     return 2
     
   elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
-    echo "NOTE: New version available!" >&2
+    consoleWriteLine "NOTE: New version available!"
     return 1
   fi
   
@@ -178,17 +195,17 @@ done
 # Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 BASE_CONFIG_FILENAME="typo3scripts.conf"
 if [[ -e "$BASE_CONFIG_FILENAME" ]]; then
-  $VERBOSE && echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..." >&2
+  consoleWriteVerbose "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
   source $BASE_CONFIG_FILENAME
-  $VERBOSE && echo "Done." >&2
+  consoleWriteLineVerbose "Done."
 fi
 
 # Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
 if [[ -e "$CONFIG_FILENAME" ]]; then
-  $VERBOSE && echo -n "Sourcing script configuration from $CONFIG_FILENAME..." >&2
+  consoleWriteVerbose "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
-  $VERBOSE && echo "Done." >&2
+  consoleWriteLineVerbose "Done."
 fi
 
 # Read command line arguments (overwrites config file)
@@ -242,42 +259,42 @@ done
 function checkDependency() {
   $VERBOSE && echo -n "Checking dependency '$1' => " >&2
   if ! hash $1 2>&-; then
-    echo "Failed!" >&2
-    echo "This script requires '$1' but it can not be found. Aborting." >&2
+    consoleWriteLine "Failed!"
+    consoleWriteLine "This script requires '$1' but it can not be found. Aborting."
     exit 1
   fi
-  $VERBOSE && echo $(which $1) >&2
+  consoleWriteLineVerbose $(which $1)
   return 0
 }
-echo -n "Checking dependencies..." >&2
-$VERBOSE && echo >&2
+consoleWrite "Checking dependencies..."
+consoleWriteLineVerbose
 checkDependency mysql
 checkDependency sed
-echo "Succeeded." >&2
+consoleWriteLine "Succeeded."
 
 # Begin main operation
 
 # Check default argument validity
 if [[ $EXTENSION == --* ]]; then
-  echo "The given extension key '$EXTENSION' looks like a command line parameter." >&2
-  echo "Please use --help to see a list of available command line parameters." >&2
+  consoleWriteLine "The given extension key '$EXTENSION' looks like a command line parameter." >&2
+  consoleWriteLine "Please use --help to see a list of available command line parameters." >&2
   exit 1
 fi
 
 # Does the base directory exist?
 if [[ ! -d $BASE ]]; then
-  echo "The base directory '$BASE' does not seem to exist!" >&2
+  consoleWriteLine "The base directory '$BASE' does not seem to exist!" >&2
   exit 1
 fi
 # Is the base directory readable?
 if [[ ! -r $BASE ]]; then
-  echo "The base directory '$BASE' is not readable!" >&2
+  consoleWriteLine "The base directory '$BASE' is not readable!" >&2
   exit 1
 fi
 
 # Check if extChangelog.sh is required and available
 if [[ $DISPLAY_CHANGELOG == 1 && ! -e extChangelog.sh ]]; then
-  echo "Upload comments will NOT be displayed! To enable this feature, download extChangelog.sh from the typo3scripts project and place it in the same folder as $SELF." >&2
+  consoleWriteLine "Upload comments will NOT be displayed! To enable this feature, download extChangelog.sh from the typo3scripts project and place it in the same folder as $SELF." >&2
 fi
 
 # Version number compare helper function
@@ -316,7 +333,7 @@ function compareVersions() {
 # Check if extension cache has been updated recently
 _extensionCacheFile="$BASE/typo3temp/1.extensions.xml.gz"
 if [[ ! -e $_extensionCacheFile ]]; then
-  echo "Unable to find extension cache '$_extensionCacheFile'. Either you are using a repository with a non-standard ID (not TYPO3.org) or you have never loaded an extension list." >&2
+  consoleWriteLine "Unable to find extension cache '$_extensionCacheFile'. Either you are using a repository with a non-standard ID (not TYPO3.org) or you have never loaded an extension list." >&2
 else
   _lastUpdateTime=$(date --reference=$_extensionCacheFile +%s)
   _currentTime=$(date +%s)
@@ -325,7 +342,7 @@ else
   # By default, 172800 seconds = 48 hours
   MAX_CACHE_UPDATE_DELAY=172800
   if [[ "$_lastUpdatePeriod" -ge "$MAX_CACHE_UPDATE_DELAY" ]]; then
-    echo "WARNING: Did you forget to update your extension cache? Last update: $(date --date @$_lastUpdateTime "+%Y-%m-%d %T")" >&2
+    consoleWriteLine "WARNING: Did you forget to update your extension cache? Last update: $(date --date @$_lastUpdateTime "+%Y-%m-%d %T")" >&2
   fi
   
 fi
@@ -343,25 +360,31 @@ for _extDirectory in "$BASE/typo3conf/ext/"*; do
     continue
   fi
 
+  set +e errexit
+  
   # Determine installed version from ext_emconf.php
   _installedVersion=$(grep --perl-regexp "'version'\s*=>\s*'\d{1,3}\.\d{1,3}\.\d{1,3}'" "$_extDirectory/ext_emconf.php" | grep --perl-regexp --only-matching "\d{1,3}\.\d{1,3}\.\d{1,3}")
+  if [[ "" == $_installedVersion ]]; then
+    consoleWriteLine        "Warning: Could not determine the installed version of extension '$_extKey'!" >&2
+    consoleWriteLineVerbose "         ext_emconf.php does not exist or the contained version is invalid." >&2
+    continue
+  fi
   
   # Get the latest known version from the cache in the database
-  set +e errexit
   _query="SELECT \`version\` FROM \`cache_extensions\` WHERE (\`extkey\` = '$_extKey') ORDER BY \`intversion\` DESC LIMIT 1;"
   _errorMessage=$(echo $_query | mysql --host=$HOST --user=$USER --pass=$PASS --database=$DB --batch --skip-column-names 2>&1 > extVersion.out)
   _status=$?
   _latestVersion=$(cat extVersion.out)
   if [[ "" == $_latestVersion ]]; then
-    echo "Warning: Could not determine the latest version of extension '$_extKey'!" >&2
-    echo "         No entry for the extension could be found in the extension cache." >&2
+    consoleWriteLine        "Warning: Could not determine the latest version of extension '$_extKey'!" >&2
+    consoleWriteLineVerbose "         No entry for the extension could be found in the extension cache." >&2
     continue
   fi
   rm -f extVersion.out
   set -e errexit
   if [[ 0 < $_status ]]; then
-    echo "Failed!" >&2
-    echo "Error: $_errorMessage" >&2
+    consoleWriteLine "Failed!" >&2
+    consoleWriteLine "Error: $_errorMessage" >&2
     exit 1
   fi
   
@@ -373,16 +396,16 @@ for _extDirectory in "$BASE/typo3conf/ext/"*; do
   
   if [[ $_versionsEqual != 0 ]]; then
     (( ++_updatesAvailable ))
-    echo "New version of '$_extKey' available. Installed: $_installedVersion Latest: $_latestVersion"
+    consoleWriteLine "New version of '$_extKey' available. Installed: $_installedVersion Latest: $_latestVersion"
     if [[ $DISPLAY_CHANGELOG == 1 && -e extChangelog.sh ]]; then
       ./extChangelog.sh --extension=$_extKey --first=$_installedVersion --skip-first 2>/dev/null
-      echo
+      consoleWriteLine
     fi
   fi
 done
 
 if [[ 0 -eq $_updatesAvailable ]]; then
-  echo "No updates available." >&2
+  consoleWriteLine "No updates available." >&2
 fi
 
 # vim:ts=2:sw=2:expandtab:
