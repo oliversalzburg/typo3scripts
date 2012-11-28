@@ -84,29 +84,46 @@ PASS=*password*
 DB=typo3
 #Script Configuration end
 
+function consoleWrite() {
+  [ "false" == "$QUIET" ] && echo -n $* >&2
+  return 0
+}
+function consoleWriteLine() {
+  [ "false" == "$QUIET" ] && echo $* >&2
+  return 0
+}
+function consoleWriteVerbose() {
+  $VERBOSE && consoleWrite $*
+  return 0
+}
+function consoleWriteLineVerbose() {
+  $VERBOSE && consoleWriteLine $*
+  return 0
+}
+
 # The base location from where to retrieve new versions of this script
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
 # Update check
 function updateCheck() {
   if ! hash curl 2>&-; then
-    consoleWriteLine "Update checking requires curl. Check skipped." >&2
+    consoleWriteLine "Update checking requires curl. Check skipped."
     return 2
   fi
   
   SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
   SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
   
-  $VERBOSE && echo "Remote hash source: '$UPDATE_BASE/versions'" >&2
-  $VERBOSE && echo "Own hash: '$SUM_SELF' Remote hash: '$SUM_LATEST'" >&2
+  consoleWriteLineVerbose "Remote hash source: '$UPDATE_BASE/versions'"
+  consoleWriteLineVerbose "Own hash: '$SUM_SELF' Remote hash: '$SUM_LATEST'"
   
   if [[ "" == $SUM_LATEST ]]; then
-    echo "No update information is available for '$SELF'" >&2
-    echo "Please check the project home page 'http://code.google.com/p/typo3scripts/'." >&2
+    consoleWriteLine "No update information is available for '$SELF'"
+    consoleWriteLine "Please check the project home page 'http://code.google.com/p/typo3scripts/'."
     return 2
     
   elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
-    echo "NOTE: New version available!" >&2
+    consoleWriteLine "NOTE: New version available!"
     return 1
   fi
   
@@ -174,17 +191,17 @@ done
 # Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 BASE_CONFIG_FILENAME="typo3scripts.conf"
 if [[ -e "$BASE_CONFIG_FILENAME" ]]; then
-  $VERBOSE && echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..." >&2
+  consoleWriteVerbose "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
   source $BASE_CONFIG_FILENAME
-  $VERBOSE && echo "Done." >&2
+  consoleWriteLineVerbose "Done."
 fi
 
 # Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
 if [[ -e "$CONFIG_FILENAME" ]]; then
-  $VERBOSE && echo -n "Sourcing script configuration from $CONFIG_FILENAME..." >&2
+  consoleWriteVerbose "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
-  $VERBOSE && echo "Done." >&2
+  consoleWriteLineVerbose "Done."
 fi
 
 # Read command line arguments (overwrites config file)
@@ -233,17 +250,17 @@ done
 
 # Check for dependencies
 function checkDependency() {
-  $VERBOSE && echo -n "Checking dependency '$1' => " >&2
+  consoleWriteVerbose "Checking dependency '$1' => "
   if ! hash $1 2>&-; then
-    echo "Failed!" >&2
-    echo "This script requires '$1' but it can not be found. Aborting." >&2
+    consoleWriteLine "Failed!"
+    consoleWriteLine "This script requires '$1' but it can not be found. Aborting."
     exit 1
   fi
-  $VERBOSE && echo $(which $1) >&2
+  consoleWriteLineVerbose $(which $1)
   return 0
 }
-echo -n "Checking dependencies..." >&2
-$VERBOSE && echo >&2
+consoleWrite "Checking dependencies..."
+consoleWriteLineVerbose
 checkDependency wget
 checkDependency curl
 checkDependency md5sum
@@ -252,69 +269,69 @@ checkDependency awk
 checkDependency find
 checkDependency tar
 checkDependency mysql
-echo "Succeeded." >&2
+consoleWriteLine "Succeeded."
 
 # Begin main operation
 
 # Check default argument validity
 if [[ $FILE == --* ]]; then
-  echo "The given TYPO3 snapshot '$FILE' looks like a command line parameter." >&2
-  echo "Please use --help to see a list of available command line parameters." >&2
+  consoleWriteLine "The given TYPO3 snapshot '$FILE' looks like a command line parameter."
+  consoleWriteLine "Please use --help to see a list of available command line parameters."
   exit 1
 fi
   
 if [[ ! -e "$FILE" ]]; then  
-  echo "The given snapshot '$FILE' does not exist." >&2
+  consoleWriteLine "The given snapshot '$FILE' does not exist."
   exit 1
 fi
 
 # Does the base directory exist?
 if [[ ! -d $BASE ]]; then
-  echo "The base directory '$BASE' does not seem to exist!" >&2
+  consoleWriteLine "The base directory '$BASE' does not seem to exist!"
   exit 1
 fi
 
 # Is the base directory writeable?
 if [[ ! -w $BASE ]]; then
-  echo "The base directory '$BASE' is not writeable!" >&2
+  consoleWriteLine "The base directory '$BASE' is not writeable!"
   exit 1
 fi
 
 # Check if we can delete the target base folder
-echo -n "Testing write permissions in $BASE..." >&2
-if ! find $BASE \( -exec test -w {} \; -o \( -exec echo {} \; -quit \) \) | xargs -I {} bash -c "if [ -n "{}" ]; then echo Failed\! >&2; echo {} is not writable\! >&2; exit 1; fi"; then
+consoleWrite "Testing write permissions in $BASE..."
+if ! find $BASE \( -exec test -w {} \; -o \( -exec echo {} \; -quit \) \) | xargs -I {} bash -c "if [ -n "{}" ]; then consoleWriteLine Failed\!; consoleWriteLine {} is not writable\!; exit 1; fi"; then
   exit 1
 fi
-echo "Succeeded" >&2
+consoleWriteLine "Succeeded"
 
-echo -n "Erasing current TYPO3 installation '$BASE'..." >&2
+consoleWrite "Erasing current TYPO3 installation '$BASE'..."
 if ! rm --recursive --force -- $BASE > /dev/null; then
-  echo "Failed!" >&2
+  consoleWriteLine "Failed!"
   exit 1
 fi
-echo "Done." >&2
+consoleWriteLine "Done."
 
-echo -n "Extracting TYPO3 backup '$FILE'..." >&2
+consoleWrite "Extracting TYPO3 backup '$FILE'..."
 if ! tar --extract --gzip --file $FILE > /dev/null; then
-  echo "Failed!" >&2
+  consoleWriteLine "Failed!"
   exit 1
 fi
-echo "Done." >&2
+consoleWriteLine "Done."
 
-echo -n "Importing database dump..." >&2
+consoleWrite "Importing database dump..."
 set +e errexit
 _errorMessage=$(mysql --host=$HOST --user=$USER --password=$PASS --default-character-set=utf8 $DB < $BASE/database.sql 2>&1 >/dev/null)
 _status=$?
 set -e errexit
 if [[ 0 < $_status ]]; then
-  echo "Failed!" >&2
-  echo "Error: $_errorMessage" >&2
+  consoleWriteLine "Failed!"
+  consoleWriteLine "Error: $_errorMessage"
   exit 1
 fi
-echo "Done." >&2
+consoleWriteLine "Done."
 
-$VERBOSE && echo -n "Deleting database dump..." >&2
+consoleWriteVerbose "Deleting database dump..."
 rm --force -- $BASE/database.sql
-$VERBOSE && echo "Done!" >&2
+consoleWriteLineVerbose "Done!"
 
 # vim:ts=2:sw=2:expandtab:

@@ -94,29 +94,46 @@ VERSION_LAST=
 SKIP_FIRST=false
 # Script Configuration end
 
+function consoleWrite() {
+  [ "false" == "$QUIET" ] && echo -n $* >&2
+  return 0
+}
+function consoleWriteLine() {
+  [ "false" == "$QUIET" ] && echo $* >&2
+  return 0
+}
+function consoleWriteVerbose() {
+  $VERBOSE && consoleWrite $*
+  return 0
+}
+function consoleWriteLineVerbose() {
+  $VERBOSE && consoleWriteLine $*
+  return 0
+}
+
 # The base location from where to retrieve new versions of this script
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
 # Update check
 function updateCheck() {
   if ! hash curl 2>&-; then
-    consoleWriteLine "Update checking requires curl. Check skipped." >&2
+    consoleWriteLine "Update checking requires curl. Check skipped."
     return 2
   fi
   
   SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
   SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
   
-  $VERBOSE && echo "Remote hash source: '$UPDATE_BASE/versions'" >&2
-  $VERBOSE && echo "Own hash: '$SUM_SELF' Remote hash: '$SUM_LATEST'" >&2
+  consoleWriteLineVerbose "Remote hash source: '$UPDATE_BASE/versions'"
+  consoleWriteLineVerbose "Own hash: '$SUM_SELF' Remote hash: '$SUM_LATEST'"
   
   if [[ "" == $SUM_LATEST ]]; then
-    echo "No update information is available for '$SELF'" >&2
-    echo "Please check the project home page 'http://code.google.com/p/typo3scripts/'." >&2
+    consoleWriteLine "No update information is available for '$SELF'"
+    consoleWriteLine "Please check the project home page 'http://code.google.com/p/typo3scripts/'."
     return 2
     
   elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
-    echo "NOTE: New version available!" >&2
+    consoleWriteLine "NOTE: New version available!"
     return 1
   fi
   
@@ -184,17 +201,17 @@ done
 # Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 BASE_CONFIG_FILENAME="typo3scripts.conf"
 if [[ -e "$BASE_CONFIG_FILENAME" ]]; then
-  $VERBOSE && echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..." >&2
+  consoleWriteVerbose "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
   source $BASE_CONFIG_FILENAME
-  $VERBOSE && echo "Done." >&2
+  consoleWriteLineVerbose "Done."
 fi
 
 # Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
 if [[ -e "$CONFIG_FILENAME" ]]; then
-  $VERBOSE && echo -n "Sourcing script configuration from $CONFIG_FILENAME..." >&2
+  consoleWriteVerbose "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
-  $VERBOSE && echo "Done." >&2
+  consoleWriteLineVerbose "Done."
 fi
 
 # Read command line arguments (overwrites config file)
@@ -252,38 +269,38 @@ done
 
 # Check for dependencies
 function checkDependency() {
-  $VERBOSE && echo -n "Checking dependency '$1' => " >&2
+  consoleWriteVerbose "Checking dependency '$1' => "
   if ! hash $1 2>&-; then
-    echo "Failed!" >&2
-    echo "This script requires '$1' but it can not be found. Aborting." >&2
+    consoleWriteLine "Failed!"
+    consoleWriteLine "This script requires '$1' but it can not be found. Aborting."
     exit 1
   fi
-  $VERBOSE && echo $(which $1) >&2
+  consoleWriteLineVerbose $(which $1)
   return 0
 }
-echo -n "Checking dependencies..." >&2
-$VERBOSE && echo >&2
+consoleWrite "Checking dependencies..."
+consoleWriteLineVerbose
 checkDependency mysql
 checkDependency sed
-echo "Succeeded." >&2
+consoleWriteLine "Succeeded."
 
 # Begin main operation
 
 # Check default argument validity
 if [[ $EXTENSION == --* ]]; then
-  echo "The given extension key '$EXTENSION' looks like a command line parameter." >&2
-  echo "Please use --help to see a list of available command line parameters." >&2
+  consoleWriteLine "The given extension key '$EXTENSION' looks like a command line parameter."
+  consoleWriteLine "Please use --help to see a list of available command line parameters."
   exit 1
 fi
 
 # Does the base directory exist?
 if [[ ! -d $BASE ]]; then
-  echo "The base directory '$BASE' does not seem to exist!" >&2
+  consoleWriteLine "The base directory '$BASE' does not seem to exist!"
   exit 1
 fi
 # Is the base directory readable?
 if [[ ! -r $BASE ]]; then
-  echo "The base directory '$BASE' is not readable!" >&2
+  consoleWriteLine "The base directory '$BASE' is not readable!"
   exit 1
 fi
 
@@ -321,18 +338,18 @@ function compareVersions() {
 }
 
 # Read upload comments from cached extensions data
-echo -n "Retrieving upload comment history..." >&2
+consoleWrite "Retrieving upload comment history..."
 set +e errexit
 _query="SELECT CONCAT(\`version\`,'\n',\`lastuploaddate\`,'\n',\`uploadcomment\`) FROM \`cache_extensions\` WHERE (\`extkey\` = '$EXTENSION');"
 _errorMessage=$(echo $_query | mysql --host=$HOST --user=$USER --pass=$PASS --database=$DB --batch --skip-column-names 2>&1 | sed 's/\\n/|/g' > extChangelog.out)
 _status=$?
 set -e errexit
 if [[ 0 < $_status ]]; then
-  echo "Failed!" >&2
-  echo "Error: $_errorMessage" >&2
+  consoleWriteLine "Failed!"
+  consoleWriteLine "Error: $_errorMessage"
   exit 1
 fi
-echo "Done." >&2
+consoleWriteLine "Done."
 
 _isFirstVersionFound=false
 while read _versionEntry; do
@@ -390,6 +407,8 @@ while read _versionEntry; do
     continue
   fi
   
+  # We're intentionally using echo here instead of consoleWriteLine, because we 
+  # want to write the changelog to standard out, not standard error.
   echo $_versionString \($(date --date @$_uploadDate "+%Y-%m-%d %T")\)
   _versionComment=$(echo $_versionEntry | cut --delimiter=\| --fields=3- -)
   echo "  $_versionComment" | sed 's/|/\n  /g'

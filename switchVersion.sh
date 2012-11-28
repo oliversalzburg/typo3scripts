@@ -65,8 +65,25 @@ FORCE=false
 # The base directory where TYPO3 is installed
 BASE=typo3
 # The version to switch to
-VERSION=4.6.4
+VERSION=6.0.0
 # Script Configuration end
+
+function consoleWrite() {
+  [ "false" == "$QUIET" ] && echo -n $* >&2
+  return 0
+}
+function consoleWriteLine() {
+  [ "false" == "$QUIET" ] && echo $* >&2
+  return 0
+}
+function consoleWriteVerbose() {
+  $VERBOSE && consoleWrite $*
+  return 0
+}
+function consoleWriteLineVerbose() {
+  $VERBOSE && consoleWriteLine $*
+  return 0
+}
 
 # The base location from where to retrieve new versions of this script
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
@@ -74,23 +91,23 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 # Update check
 function updateCheck() {
   if ! hash curl 2>&-; then
-    consoleWriteLine "Update checking requires curl. Check skipped." >&2
+    consoleWriteLine "Update checking requires curl. Check skipped."
     return 2
   fi
   
   SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
   SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
   
-  $VERBOSE && echo "Remote hash source: '$UPDATE_BASE/versions'" >&2
-  $VERBOSE && echo "Own hash: '$SUM_SELF' Remote hash: '$SUM_LATEST'" >&2
+  consoleWriteLineVerbose "Remote hash source: '$UPDATE_BASE/versions'"
+  consoleWriteLineVerbose "Own hash: '$SUM_SELF' Remote hash: '$SUM_LATEST'"
   
   if [[ "" == $SUM_LATEST ]]; then
-    echo "No update information is available for '$SELF'" >&2
-    echo "Please check the project home page 'http://code.google.com/p/typo3scripts/'." >&2
+    consoleWriteLine "No update information is available for '$SELF'"
+    consoleWriteLine "Please check the project home page 'http://code.google.com/p/typo3scripts/'."
     return 2
     
   elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
-    echo "NOTE: New version available!" >&2
+    consoleWriteLine "NOTE: New version available!"
     return 1
   fi
   
@@ -158,17 +175,17 @@ done
 # Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 BASE_CONFIG_FILENAME="typo3scripts.conf"
 if [[ -e "$BASE_CONFIG_FILENAME" ]]; then
-  $VERBOSE && echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..." >&2
+  consoleWriteVerbose "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
   source $BASE_CONFIG_FILENAME
-  $VERBOSE && echo "Done." >&2
+  consoleWriteLineVerbose "Done."
 fi
 
 # Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
 if [[ -e "$CONFIG_FILENAME" ]]; then
-  $VERBOSE && echo -n "Sourcing script configuration from $CONFIG_FILENAME..." >&2
+  consoleWriteVerbose "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
-  $VERBOSE && echo "Done." >&2
+  consoleWriteLineVerbose "Done."
 fi
 
 # Read command line arguments (overwrites config file)
@@ -205,31 +222,31 @@ done
 
 # Check for dependencies
 function checkDependency() {
-  $VERBOSE && echo -n "Checking dependency '$1' => " >&2
+  consoleWriteVerbose "Checking dependency '$1' => "
   if ! hash $1 2>&-; then
-    echo "Failed!" >&2
-    echo "This script requires '$1' but it can not be found. Aborting." >&2
+    consoleWriteLine "Failed!"
+    consoleWriteLine "This script requires '$1' but it can not be found. Aborting."
     exit 1
   fi
-  $VERBOSE && echo $(which $1) >&2
+  consoleWriteLineVerbose $(which $1)
   return 0
 }
-echo -n "Checking dependencies..." >&2
-$VERBOSE && echo >&2
+consoleWrite "Checking dependencies..."
+consoleWriteLineVerbose
 checkDependency wget
 checkDependency curl
 checkDependency md5sum
 checkDependency grep
 checkDependency awk
 checkDependency tar
-echo "Succeeded." >&2
+consoleWriteLine "Succeeded."
 
 # Begin main operation
 
 # Check default argument validity
 if [[ $VERSION == --* ]]; then
-  echo "The given TYPO3 version '$VERSION' looks like a command line parameter." >&2
-  echo "Please use --help to see a list of available command line parameters." >&2
+  consoleWriteLine "The given TYPO3 version '$VERSION' looks like a command line parameter."
+  consoleWriteLine "Please use --help to see a list of available command line parameters."
   exit 1
 fi
 
@@ -244,71 +261,71 @@ VERSION_DIRNAME=typo3_src-$VERSION
 VERSION_DIR=$BASE/$VERSION_DIRNAME/
 SYMLINK=$BASE/typo3_src
 
-$VERBOSE && echo -n "Looking for TYPO3 source package at '$VERSION_DIR'..." >&2
+consoleWriteVerbose "Looking for TYPO3 source package at '$VERSION_DIR'..."
 if [[ -d "$VERSION_DIR" ]]; then
-  $VERBOSE && echo "Found!" >&2
+  consoleWriteLineVerbose "Found!"
 else
   # Retrieve TYPO3 source package
   if [[ -e "$VERSION_FILE" ]]; then
-    $VERBOSE && echo "NOT found!" >&2
-    echo "Archive already exists. Trying to resume download." >&2
-    echo -n "Downloading $TYPO3_DOWNLOAD_URL..." >&2
+    consoleWriteLineVerbose "NOT found!"
+    consoleWriteLine "Archive already exists. Trying to resume download."
+    consoleWrite "Downloading $TYPO3_DOWNLOAD_URL..."
     if ! wget --quiet --continue $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE; then
-      echo "Failed!" >&2
+      consoleWriteLine "Failed!"
       exit 1
     fi
   else
-    $VERBOSE && echo "NOT found! Downloading." >&2
-    echo -n "Downloading $TYPO3_DOWNLOAD_URL..." >&2
+    consoleWriteLineVerbose "NOT found! Downloading."
+    consoleWrite "Downloading $TYPO3_DOWNLOAD_URL..."
     if ! wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE; then
-      echo "Failed!" >&2
+      consoleWriteLine "Failed!"
       exit 1
     fi
   fi
-  echo "Done." >&2
+  consoleWriteLine "Done."
 
-  echo -n "Extracting source package $VERSION_FILE..." >&2
+  consoleWrite "Extracting source package $VERSION_FILE..."
   if ! tar --extract --gzip --directory $BASE --file $VERSION_FILE; then
-    echo "Failed!" >&2
+    consoleWriteLine "Failed!"
     exit 1
   fi
-  echo "Done." >&2
+  consoleWriteLine "Done."
 fi
 
 # Switch symlink
-echo -n "Switching TYPO3 source symlink to $VERSION_DIR..." >&2
+consoleWrite "Switching TYPO3 source symlink to $VERSION_DIR..."
 if ! rm --force -- $SYMLINK; then
-  echo "Failed! Unable to remove old symlink '$SYMLINK'" >&2
+  consoleWriteLine "Failed! Unable to remove old symlink '$SYMLINK'"
   exit 1
 fi
 if ! ln --symbolic $VERSION_DIRNAME $SYMLINK; then
-  echo "Failed! Unable to create new symlink '$SYMLINK'" >&2
+  consoleWriteLine "Failed! Unable to create new symlink '$SYMLINK'"
   exit 1
 fi
-echo "Done." >&2
+consoleWriteLine "Done."
 
 # Check if index.php is a file or a symlink
 # If it is a file, it is an indication of a bootstrap.sh installation using
 # the --fix-indexphp parameter.
 INDEX_PHP=$BASE/index.php
 INDEX_TARGET=$SYMLINK/index.php
-$VERBOSE && echo -n "Checking if index.php needs to be updated..." >&2
+consoleWriteVerbose "Checking if index.php needs to be updated..."
 if [[ -h "$INDEX_PHP" ]]; then
   rm -f "$INDEX_PHP"
   cp "$INDEX_TARGET" "$INDEX_PHP"
-  $VERBOSE && echo "Done." >&2
+  consoleWriteLineVerbose "Done."
 else
-  $VERBOSE && echo "Skipped." >&2
+  consoleWriteLineVerbose "Skipped."
 fi
 
 # Delete old, cached files
-$VERBOSE && echo -n "Deleting temp_CACHED_* files from typo3conf..." >&2
+consoleWriteVerbose "Deleting temp_CACHED_* files from typo3conf..."
 if ! rm --force -- $BASE/typo3conf/temp_CACHED_*; then
-  $VERBOSE && echo "Failed!" >&2
+  consoleWriteLineVerbose "Failed!"
   # No need to exit. Failing to delete cache files is not critical to operation
 fi
 
-echo "Done!" >&2
-echo "Version switched to $VERSION." >&2
+consoleWriteLine "Done!"
+consoleWriteLine "Version switched to $VERSION."
 
 # vim:ts=2:sw=2:expandtab:
