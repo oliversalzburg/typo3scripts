@@ -102,7 +102,7 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 # Update check
 function updateCheck() {
   if ! hash curl 2>&-; then
-    consoleWriteLine "Update checking requires curl. Check skipped." >&2
+    consoleWriteLine "Update checking requires curl. Check skipped."
     return 2
   fi
   

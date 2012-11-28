@@ -142,7 +142,7 @@ UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 # Update check
 function updateCheck() {
   if ! hash curl 2>&-; then
-    consoleWriteLine "Update checking requires curl. Check skipped." >&2
+    consoleWriteLine "Update checking requires curl. Check skipped."
     return 2
   fi
   
@@ -338,7 +338,7 @@ fi
 # Check for existing installations
 if [[ -d "$BASE" ]]; then
   consoleWriteLine "A directory named $BASE already exists. $SELF will not overwrite existing content."
-  consoleWriteLine "Please remove the folder $BASE manually and run this script again." >&2
+  consoleWriteLine "Please remove the folder $BASE manually and run this script again."
   exit 1
 fi
 
