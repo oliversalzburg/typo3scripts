@@ -242,7 +242,7 @@ done
 
 # Check for dependencies
 function checkDependency() {
-  $VERBOSE && echo -n "Checking dependency '$1' => " >&2
+  consoleWriteVerbose "Checking dependency '$1' => " >&2
   if ! hash $1 2>&-; then
     consoleWriteLine "Failed!"
     consoleWriteLine "This script requires '$1' but it can not be found. Aborting."

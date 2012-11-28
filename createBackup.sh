@@ -79,6 +79,23 @@ PASS=*password*
 DB=typo3
 # Script Configuration end
 
+function consoleWrite() {
+  [ "false" == "$QUIET" ] && echo -n $* >&2
+  return 0
+}
+function consoleWriteLine() {
+  [ "false" == "$QUIET" ] && echo $* >&2
+  return 0
+}
+function consoleWriteVerbose() {
+  $VERBOSE && consoleWrite $*
+  return 0
+}
+function consoleWriteLineVerbose() {
+  $VERBOSE && consoleWriteLine $*
+  return 0
+}
+
 # The base location from where to retrieve new versions of this script
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
 
@@ -92,16 +109,16 @@ function updateCheck() {
   SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
   SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
   
-  $VERBOSE && echo "Remote hash source: '$UPDATE_BASE/versions'" >&2
-  $VERBOSE && echo "Own hash: '$SUM_SELF' Remote hash: '$SUM_LATEST'" >&2
+  consoleWriteLineVerbose "Remote hash source: '$UPDATE_BASE/versions'"
+  consoleWriteLineVerbose "Own hash: '$SUM_SELF' Remote hash: '$SUM_LATEST'"
   
   if [[ "" == $SUM_LATEST ]]; then
-    echo "No update information is available for '$SELF'" >&2
-    echo "Please check the project home page 'http://code.google.com/p/typo3scripts/'." >&2
+    consoleWriteLine "No update information is available for '$SELF'"
+    consoleWriteLine "Please check the project home page 'http://code.google.com/p/typo3scripts/'."
     return 2
     
   elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
-    echo "NOTE: New version available!" >&2
+    consoleWriteLine "NOTE: New version available!"
     return 1
   fi
   
@@ -169,17 +186,17 @@ done
 # Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 BASE_CONFIG_FILENAME="typo3scripts.conf"
 if [[ -e "$BASE_CONFIG_FILENAME" ]]; then
-  $VERBOSE && echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..." >&2
+  consoleWriteVerbose "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
   source $BASE_CONFIG_FILENAME
-  $VERBOSE && echo "Done." >&2
+  consoleWriteLineVerbose "Done."
 fi
 
 # Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
 if [[ -e "$CONFIG_FILENAME" ]]; then
-  $VERBOSE && echo -n "Sourcing script configuration from $CONFIG_FILENAME..." >&2
+  consoleWriteVerbose "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
-  $VERBOSE && echo "Done." >&2
+  consoleWriteLineVerbose "Done."
 fi
 
 # Read command line arguments (overwrites config file)
@@ -233,17 +250,17 @@ done
 
 # Check for dependencies
 function checkDependency() {
-  $VERBOSE && echo -n "Checking dependency '$1' => " >&2
+  consoleWriteVerbose "Checking dependency '$1' => "
   if ! hash $1 2>&-; then
-    echo "Failed!" >&2
-    echo "This script requires '$1' but it can not be found. Aborting." >&2
+    consoleWriteLine "Failed!"
+    consoleWriteLine "This script requires '$1' but it can not be found. Aborting."
     exit 1
   fi
-  $VERBOSE && echo $(which $1) >&2
+  consoleWriteLineVerbose $(which $1)
   return 0
 }
-echo -n "Checking dependencies..." >&2
-$VERBOSE && echo >&2
+consoleWrite "Checking dependencies..."
+consoleWriteLineVerbose
 checkDependency wget
 checkDependency curl
 checkDependency md5sum
@@ -251,48 +268,48 @@ checkDependency grep
 checkDependency awk
 checkDependency tar
 checkDependency mysqldump
-echo "Succeeded." >&2
+consoleWriteLine "Succeeded."
 
 # Begin main operation
 
 # Does the base directory exist?
 if [[ ! -d $BASE ]]; then
-  echo "The base directory '$BASE' does not seem to exist!" >&2
+  consoleWriteLine "The base directory '$BASE' does not seem to exist!"
   exit 1
 fi
 # Is the base directory readable?
 if [[ ! -r $BASE ]]; then
-  echo "The base directory '$BASE' is not readable!" >&2
+  consoleWriteLine "The base directory '$BASE' is not readable!"
   exit 1
 fi
 
 # Filename for snapshot
 FILE=$BASE-$(date +%Y-%m-%d-%H-%M).tgz
 
-echo "Creating TYPO3 backup '$FILE'..." >&2
+consoleWriteLine "Creating TYPO3 backup '$FILE'..."
 
 # Create database dump
-echo -n "Creating database dump at '$BASE/database.sql'..." >&2
+consoleWrite "Creating database dump at '$BASE/database.sql'..."
 set +e errexit
 _errorMessage=$(mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database --databases $DB 2>&1 > $BASE/database.sql)
 _status=$?
 set -e errexit
 if [[ 0 < $_status ]]; then
-  echo "Failed!" >&2
-  echo "Error: $_errorMessage" >&2
+  consoleWriteLine "Failed!"
+  consoleWriteLine "Error: $_errorMessage"
   exit 1
 fi
-echo "Done." >&2
+consoleWriteLine "Done."
 
 
 # Create backup archive
 _statusMessage="Compressing TYPO3 installation..."
-echo -n $_statusMessage >&2
+consoleWrite $_statusMessage
 if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
-  echo "" >&2
+  consoleWriteLine
   _folderSize=`du --summarize --bytes $BASE | cut --fields 1`
   if ! tar --create --file - $BASE | pv --progress --rate --bytes --size $_folderSize | gzip --best > $FILE; then
-    echo "Failed!" >&2
+    consoleWriteLine "Failed!"
     exit 1
   fi
   # Clear pv output and position cursor after status message
@@ -301,16 +318,16 @@ if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
   tput cuu 2 && tput cuf ${#_statusMessage} && tput ed
 else
   if ! tar --create --gzip --file $FILE $BASE; then
-    echo "Failed!" >&2
+    consoleWriteLine "Failed!"
     exit 1
   fi
 fi
 
-echo "Done." >&2
+consoleWriteLine "Done."
 
 # Now that the database dump is packed up, delete it
-$VERBOSE && echo -n "Deleting database dump..." >&2
+consoleWriteVerbose "Deleting database dump..."
 rm --force -- $BASE/database.sql
-$VERBOSE && echo "Done!" >&2
+consoleWriteLineVerbose "Done!"
 
 # vim:ts=2:sw=2:expandtab:
