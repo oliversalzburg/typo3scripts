@@ -291,7 +291,7 @@ consoleWriteLine "Creating TYPO3 backup '$FILE'..."
 # Create database dump
 consoleWrite "Creating database dump at '$BASE/database.sql'..."
 set +e errexit
-_errorMessage=$(mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database --databases $DB 2>&1 > $BASE/database.sql)
+_errorMessage=$(mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database $DB 2>&1 > $BASE/database.sql)
 _status=$?
 set -e errexit
 if [[ 0 < $_status ]]; then
