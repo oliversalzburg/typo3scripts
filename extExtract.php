@@ -15,12 +15,16 @@ function showHelp( $name ) {
   Usage: $name [OPTIONS] [--extension=]EXTKEY
   
   Core:
-  --help                  Display this help and exit.
-  --update                Tries to update the script to the latest version.
-  --base=PATH             The name of the base path where Typo3 is
-                          installed. If no base is supplied, "typo3" is used.
-  --export-config         Prints the default configuration of this script.
-  --extract-config        Extracts configuration parameters from TYPO3.
+  --help              Display this help and exit.
+  --verbose           Display more detailed messages.
+  --quiet             Do not display anything.
+  --force             Perform actions that would otherwise abort the script.
+  --update            Tries to update the script to the latest version.
+  --update-check      Checks if a newer version of the script is available.
+  --export-config     Prints the default configuration of this script.
+  --extract-config    Extracts configuration parameters from TYPO3.
+  --base=PATH         The name of the base path where TYPO3 is 
+                      installed. If no base is supplied, "typo3" is used.
   
   Options:
   --extension=EXTKEY      The extension key of the extension that should be
@@ -69,6 +73,12 @@ if( $argc <= REQUIRED_ARGUMENT_COUNT ) {
 }
 
 # Script Configuration start
+# Should the script give more detailed feedback?
+$VERBOSE="false";
+# Should the script surpress all feedback?
+$QUIET="false";
+# Should the script ignore reasons that would otherwise cause it to abort?
+$FORCE="false";
 # The base directory where Typo3 is installed
 $BASE="typo3";
 # The hostname of the MySQL server that Typo3 uses
@@ -97,6 +107,30 @@ $FORCE_VERSION="";
 
 // The base location from where to retrieve new versions of this script
 $UPDATE_BASE = "http://typo3scripts.googlecode.com/svn/trunk";
+
+/**
+ * Update check
+ */
+function updateCheck() {
+  $_contentVersions = file_get_contents( $UPDATE_BASE . "/versions" );
+  $_contentSelf     = split( "\n", file_get_contents( INVNAME ), 2 );
+  $_sumSelf         = md5( $_contentSelf[ 1 ] );
+  
+  if( $VERBOSE ) file_put_contents( "php://stderr", "Remote hash source: '" . $UPDATE_BASE . "/versions'\n" );
+  if( $VERBOSE ) file_put_contents( "php://stderr", "Own hash: '" . $SUM_SELF . "' Remote hash: '" . $SUM_LATEST . "'\n" );
+  
+  $_isListed = preg_match( "/^" . SELF . " (?P<sum>[0-9a-zA-Z]{32})/ms", $_contentVersions, $_sumLatest );
+  if( !$_isListed ) {
+    file_put_contents( "php://stderr", "No update information is available for '" . SELF . "'.\n" );
+    file_put_contents( "php://stderr", "Please check the project home page http://code.google.com/p/typo3scripts/.\n" );
+    return 2
+    
+  } else if( $_sumSelf != $_sumLatest[ 1 ] ) {
+    file_put_contents( "php://stderr", "NOTE: New version available!\n" );
+    return 1
+  }
+  return 0
+}
 
 /**
  * Self-update
@@ -147,7 +181,7 @@ EOS;
   file_put_contents( "updateScript.sh", $_updateScript );
 
   echo "Inserting update process...";
-    file_put_contents( "updateScript.sh", $_updateScript );
+  file_put_contents( "updateScript.sh", $_updateScript );
   chmod( "updateScript.sh", 0700 );
 
   if( function_exists( "pcntl_exec" ) ) {
@@ -174,28 +208,41 @@ foreach( $argv as $_option ) {
 // Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 $BASE_CONFIG_FILENAME = "typo3scripts.conf";
 if( file_exists( $BASE_CONFIG_FILENAME ) ) {
-  file_put_contents( "php://stderr", "Sourcing script configuration from " . $BASE_CONFIG_FILENAME . "..." );
+  if( $VERBOSE ) file_put_contents( "php://stderr", "Sourcing script configuration from " . $BASE_CONFIG_FILENAME . "..." );
   $_baseConfig = file_get_contents( $BASE_CONFIG_FILENAME );
   $_baseConfigFixed = preg_replace( "/^(?!\s*$)(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_baseConfig );
   eval( $_baseConfigFixed );
-  file_put_contents( "php://stderr", "Done.\n" );
+  if( $VERBOSE ) file_put_contents( "php://stderr", "Done.\n" );
 }
 
 // Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 $CONFIG_FILENAME = substr( SELF, 0, -4 ) . ".conf";
 if( file_exists( $CONFIG_FILENAME ) ) {
-  file_put_contents( "php://stderr", "Sourcing script configuration from " . $CONFIG_FILENAME . "..." );
+  if( $VERBOSE ) file_put_contents( "php://stderr", "Sourcing script configuration from " . $CONFIG_FILENAME . "..." );
   $_config = file_get_contents( $CONFIG_FILENAME );
   $_configFixed = preg_replace( "/^(?!\s*$)(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_config );
   eval( $_configFixed );
-  file_put_contents( "php://stderr", "Done.\n" );
+  if( $VERBOSE ) file_put_contents( "php://stderr", "Done.\n" );
 }
 
 foreach( $argv as $_option ) {
   if( $_option === $argv[ 0 ] ) continue;
 
-  if( 0 === strpos( $_option, "--update" ) ) {
+         if( 0 === strpos( $_option, "--verbose" ) ) {
+    $VERBOSE = "true";
+    
+  } else if( 0 === strpos( $_option, "--quiet" ) ) {
+    $QUIET = "true";
+  
+  } else if( 0 === strpos( $_option, "--force" ) ) {
+    $FORCE = "true";
+      
+  } else if( 0 === strpos( $_option, "--update" ) ) {
     runSelfUpdate();
+    
+  } else if( 0 === strpos( $_option, "--update-check" ) ) {
+    $returnValue = updateCheck()
+    exit( $returnValue );
 
   } else if( 0 === strpos( $_option, "--base=" ) ) {
     $BASE = substr( $_option, strpos( $_option, "=" ) + 1 );
@@ -235,38 +282,23 @@ foreach( $argv as $_option ) {
     } else {
       $OUTPUTFILE = substr( $_option, $_equalSignIndex + 1 );
     }
-    echo "Output file ='" . $OUTPUTFILE . "'\n";
     
   } else {
     $EXTENSION = $_option;
   }
 }
 
-// Update check
-$_contentVersions = file_get_contents( $UPDATE_BASE . "/versions" );
-$_contentSelf     = split( "\n", file_get_contents( INVNAME ), 2 );
-$_sumSelf         = md5( $_contentSelf[ 1 ] );
-
-$_isListed = preg_match( "/^" . SELF . " (?P<sum>[0-9a-zA-Z]{32})/ms", $_contentVersions, $_sumLatest );
-if( !$_isListed ) {
-  file_put_contents( "php://stderr", "No update information is available for '" . SELF . "'.\n" );
-  file_put_contents( "php://stderr", "Please check the project home page http://code.google.com/p/typo3scripts/.\n" );
-  
-} else if( $_sumSelf != $_sumLatest[ 1 ] ) {
-  file_put_contents( "php://stderr", "NOTE: New version available!\n" );
-}
-
 // Begin main operation
 
-// Check argument validity
+// Check default argument validity
 if( 0 === strpos( $EXTENSION, "--" ) ) {
-  echo "The given extension key '$EXTENSION' looks like a command line parameter.\n";
-  echo "Please use the --extension parameter when giving multiple arguments.\n";
+  file_put_contents( "php://stderr", "The given extension key '$EXTENSION' looks like a command line parameter.\n" );
+  file_put_contents( "php://stderr", "Please use --help to see a list of available command line parameters.\n" );
   exit( 1 );
 }
 
 if( "" === $EXTENSION ) {
-  echo "No extension given.\n";
+  file_put_contents( "php://stderr", "No extension given.\n" );
   exit( 1 );
 }
 
@@ -456,10 +488,12 @@ if( $EXTRACT === "true" ) {
     // is_dir() and mkdir() seem highly unreliable in their return values,
     // so we must ignore failures on mkdir() and have to catch issues later.
     if( FALSE === is_dir( $_fullPathName ) ) {
+      if( $VERBOSE ) && file_put_contents( "php://stderr", "Creating directory '$_fullPathName'.\n" );
       @mkdir( $_fullPathName, 0700, true );
     }
     
     $_fullFileName = $OUTPUTDIR . "/" . $_file[ "name" ];
+    if( $VERBOSE ) && file_put_contents( "php://stderr", "Writing file '$_fullFileName'.\n" );
     if( FALSE === file_put_contents( $_fullFileName, $_file[ "content" ] ) ) {
       file_put_contents( "php://stderr", "Error: Failed to write file '$_fullFileName'.\n" );
     }

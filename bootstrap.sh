@@ -11,15 +11,19 @@ SELF=$(basename "$0")
 # Show the help for this script
 function showHelp() {
   cat << EOF
-  Usage: $0 [OPTIONS --version=<VERSION>]|<VERSION>
+  Usage: $0 [OPTIONS]
 
   Core:
   --help              Display this help and exit.
+  --verbose           Display more detailed messages.
+  --quiet             Do not display anything.
+  --force             Perform actions that would otherwise abort the script.
   --update            Tries to update the script to the latest version.
-  --base=PATH         The name of the base path where TYPO3 should be
-                      installed. If no base is supplied, "typo3" is used.
+  --update-check      Checks if a newer version of the script is available.
   --export-config     Prints the default configuration of this script.
   --extract-config    Extracts configuration parameters from TYPO3.
+  --base=PATH         The name of the base path where TYPO3 is 
+                      installed. If no base is supplied, "typo3" is used.
 
   Options:
   --version=VERSION   The version to install.
@@ -38,11 +42,6 @@ function showHelp() {
   --password=PASSWORD The password to use when connecting to the TYPO3
                       database.
   --database=DB       The name of the database in which TYPO3 is stored.
-
-  Note: When using an external configuration file, it is sufficient to supply
-        just the target version as a parameter.
-        When supplying other any command line argument, supply the target
-        version through the --version command line parameter.
 EOF
 }
 
@@ -64,18 +63,24 @@ function extractConfig() {
 }
 
 # Check on minimal command line argument count
-REQUIRED_ARGUMENT_COUNT=1
+REQUIRED_ARGUMENT_COUNT=0
 if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
-  echo "Insufficient command line arguments!"
-  echo "Use $0 --help to get additional information."
+  echo "Insufficient command line arguments!" >&2
+  echo "Use $0 --help to get additional information." >&2
   exit 1
 fi
 
 # Script Configuration start
+# Should the script give more detailed feedback?
+VERBOSE=false
+# Should the script surpress all feedback?
+QUIET=false
+# Should the script ignore reasons that would otherwise cause it to abort?
+FORCE=false
 # The base directory where TYPO3 should be installed
 BASE=typo3
 # The version to install
-VERSION=$1
+VERSION=4.7.1
 # The hostname of the MySQL server that TYPO3 uses
 HOST=localhost
 # The username used to connect to that MySQL server
@@ -87,7 +92,7 @@ DB=typo3
 # Should the database configuration be written to the TYPO3 configuration?
 SKIP_DB_CONFIG=false
 # Should the detection of GraphicsMagick be skipped?
-SKIP_GM_DETECT=false
+SKIP_GM_DETECT=true
 # Should the detection of the unzip utility be skipped?
 SKIP_UNZIP_DETECT=false
 # Should we try to fix access permissions for files of the new
@@ -114,8 +119,51 @@ if [[ "$(id -u)" == "0" ]]; then
   OWNER=$SUDO_USER
 fi
 
+function consoleWrite() {
+  [ "false" == "$QUIET" ] && echo -n $* >&2
+  return 0
+}
+function consoleWriteLine() {
+  [ "false" == "$QUIET" ] && echo $* >&2
+  return 0
+}
+function consoleWriteVerbose() {
+  $VERBOSE && consoleWrite $*
+  return 0
+}
+function consoleWriteLineVerbose() {
+  $VERBOSE && consoleWriteLine $*
+  return 0
+}
+
 # The base location from where to retrieve new versions of this script
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
+
+# Update check
+function updateCheck() {
+  if ! hash curl 2>&-; then
+    consoleWriteLine "Update checking requires curl. Check skipped."
+    return 2
+  fi
+  
+  SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
+  SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
+  
+  consoleWriteLineVerbose "Remote hash source: '$UPDATE_BASE/versions'"
+  consoleWriteLineVerbose "Own hash: '$SUM_SELF' Remote hash: '$SUM_LATEST'"
+  
+  if [[ "" == $SUM_LATEST ]]; then
+    consoleWriteLine "No update information is available for '$SELF'"
+    consoleWriteLine "Please check the project home page 'http://code.google.com/p/typo3scripts/'."
+    return 2
+    
+  elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
+    consoleWriteLine "NOTE: New version available!"
+    return 1
+  fi
+  
+  return 0
+}
 
 # Self-update
 function runSelfUpdate() {
@@ -178,34 +226,40 @@ done
 # Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 BASE_CONFIG_FILENAME="typo3scripts.conf"
 if [[ -e "$BASE_CONFIG_FILENAME" ]]; then
-  echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
+  consoleWriteVerbose "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
   source $BASE_CONFIG_FILENAME
-  echo "Done."
+  consoleWriteLineVerbose "Done."
 fi
 
 # Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
 if [[ -e "$CONFIG_FILENAME" ]]; then
-  echo -n "Sourcing script configuration from $CONFIG_FILENAME..."
+  consoleWriteVerbose "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
-  echo "Done."
+  consoleWriteLineVerbose "Done."
 fi
 
 # Read command line arguments (overwrites config file)
 for option in $*; do
   case "$option" in
+    --verbose)
+      VERBOSE=true
+      ;;
+    --quiet)
+      QUIET=true
+      ;;
+    --force)
+      FORCE=true
+      ;;
     --update)
       runSelfUpdate
       ;;
-    --base=*)
-      BASE=$(echo $option | cut -d'=' -f2)
+    --update-check)
+      updateCheck
+      exit $?
       ;;
     --export-config)
       exportConfig
-      exit 0
-      ;;
-    --extract-config)
-      extractConfig
       exit 0
       ;;
     --version=*)
@@ -252,13 +306,17 @@ done
 
 # Check for dependencies
 function checkDependency() {
+  consoleWriteVerbose "Checking dependency '$1' => "
   if ! hash $1 2>&-; then
-    echo "Failed!"
-    echo "This script requires '$1' but it can not be found. Aborting." >&2
+    consoleWriteLine "Failed!"
+    consoleWriteLine "This script requires '$1' but it can not be found. Aborting."
     exit 1
   fi
+  consoleWriteLineVerbose $(which $1)
+  return 0
 }
-echo -n "Checking dependencies..."
+consoleWrite "Checking dependencies..."
+consoleWriteLineVerbose
 checkDependency wget
 checkDependency curl
 checkDependency md5sum
@@ -266,32 +324,21 @@ checkDependency sha1sum
 checkDependency grep
 checkDependency awk
 checkDependency tar
-echo "Succeeded."
-
-# Update check
-SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
-SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
-if [[ "" == $SUM_LATEST ]]; then
-  echo "No update information is available for '$SELF'" >&2
-  echo "Please check the project home page http://code.google.com/p/typo3scripts/." >&2
-  
-elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
-  echo "NOTE: New version available!" >&2
-fi
+consoleWriteLine "Succeeded."
 
 # Begin main operation
 
-# Check for existing installations
-if [[ -d "$BASE" ]]; then
-  echo "A directory named $BASE already exists. $SELF will not overwrite existing content."
-  echo "Please remove the folder $BASE manually and run this script again."
+# Check default argument validity
+if [[ $VERSION == --* ]]; then
+  consoleWriteLine "The given TYPO3 version '$VERSION' looks like a command line parameter."
+  consoleWriteLine "Please use --help to see a list of available command line parameters."
   exit 1
 fi
 
-# Check argument validity
-if [[ $VERSION == --* ]]; then
-  echo "The given TYPO3 version '$VERSION' looks like a command line parameter."
-  echo "Please use the --version parameter when giving multiple arguments."
+# Check for existing installations
+if [[ -d "$BASE" ]]; then
+  consoleWriteLine "A directory named $BASE already exists. $SELF will not overwrite existing content."
+  consoleWriteLine "Please remove the folder $BASE manually and run this script again."
   exit 1
 fi
 
@@ -299,42 +346,42 @@ fi
 if [[ "$(id -u)" != "0" ]]; then
   if ! $SKIP_RIGHTS; then
     SKIP_RIGHTS=true
-    echo "Adjusting access rights for the target installation will be skipped because this script is not running with root privileges!"
+    consoleWriteLine "Adjusting access rights for the target installation will be skipped because this script is not running with root privileges!"
   fi
 fi
 
-# The name of the package and the folder it will live in
+# The name of the package
 VERSION_NAME=blankpackage-$VERSION
 # The name of the file that contains the package
 VERSION_FILENAME=$VERSION_NAME.tar.gz
 # The location where the package can be downloaded
 TYPO3_DOWNLOAD_URL=http://prdownloads.sourceforge.net/typo3/$VERSION_FILENAME
 
-echo -n "Looking for TYPO3 package at $VERSION_FILENAME..."
+consoleWriteVerbose "Looking for TYPO3 package at '$VERSION_FILENAME'..."
 if [[ ! -e "$VERSION_FILENAME" ]]; then
-  echo "NOT found!"
-  echo -n "Downloading $TYPO3_DOWNLOAD_URL..."
+  consoleWriteLineVerbose "NOT found!"
+  consoleWrite "Downloading $TYPO3_DOWNLOAD_URL..."
   wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILENAME
 else
-  echo "Found!"
-  echo -n "Trying to resume download from $TYPO3_DOWNLOAD_URL..."
+  consoleWriteLineVerbose "Found!"
+  consoleWrite "Trying to resume download from '$TYPO3_DOWNLOAD_URL'..."
   wget --quiet --continue $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILENAME
 fi
-echo "Done."
+consoleWriteLine "Done."
 
-echo -n "Extracting TYPO3 package $VERSION_FILENAME..."
+consoleWrite "Extracting TYPO3 package '$VERSION_FILENAME'..."
 if ! tar --extract --gzip --file $VERSION_FILENAME; then
-  echo "Failed!"
+  consoleWriteLine "Failed!"
   exit 1
 fi
-echo "Done."
+consoleWriteLine "Done."
 
-echo -n "Moving TYPO3 package to $BASE..."
+consoleWrite "Moving TYPO3 package to '$BASE'..."
 if ! mv $VERSION_NAME $BASE; then
-  echo "Failed!"
+  consoleWriteLine "Failed!"
   exit 1
 fi
-echo "Done."
+consoleWriteLine "Done."
 
 # Generate configuration
 
@@ -342,13 +389,13 @@ echo "Done."
 _NEWLINE_PRINTED=false
 function newLineOnce() {
   if $_NEWLINE_PRINTED; then
-      return
+    return
   fi
-  echo
+  consoleWriteLine
   _NEWLINE_PRINTED=true
 }
 
-echo -n "Generating localconf.php..."
+consoleWrite "Generating localconf.php..."
 TYPO3_CONFIG=
 
 # Add database configuration
@@ -366,10 +413,11 @@ INSTALL_TOOL_PASSWORD_HASH=$(echo -n $INSTALL_TOOL_PASSWORD | md5sum | awk '{pri
 TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['BE']['installToolPassword'] = '$INSTALL_TOOL_PASSWORD_HASH';\n"
 
 # Add GraphicsMagick (if available)
+# TODO: Setting [GFX][im_no_effects] = 1 should be preferred over using GM due to GM's problems when converting .pdf and .psd documents
 if ! $SKIP_GM_DETECT; then
   if ! hash gm 2>&-; then
     newLineOnce
-    echo "  Could not find GraphicsMagick binary. im_version_5 will not be set."
+    consoleWriteLine "  Could not find GraphicsMagick binary. im_version_5 will not be set."
   else
     LOCATION_GM=$(which gm)
     TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['GFX']['im_version_5'] = '$LOCATION_GM';\n"
@@ -380,7 +428,7 @@ fi
 if ! $SKIP_UNZIP_DETECT; then
   if ! hash unzip 2>&-; then
     newLineOnce
-    echo "  Could not find unzip binary. unzip_path will not be set."
+    consoleWriteLine "  Could not find unzip binary. unzip_path will not be set."
   else
     LOCATION_UNZIP=$(which unzip)
     TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['BE']['unzip_path'] = '$LOCATION_UNZIP';\n"
@@ -389,44 +437,48 @@ fi
 
 # Write configuration
 if ! cp $BASE/typo3conf/localconf.php $BASE/typo3conf/localconf.php.orig; then
-  echo "Failed! Unable to create copy of localconf.php"
+  consoleWriteLine "Failed! Unable to create copy of localconf.php"
   exit 1
 fi
 
 if ! sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/localconf.php.orig > $BASE/typo3conf/localconf.php; then
-  echo "Failed! Unable to modify localconf.php"
+  consoleWriteLine "Failed! Unable to modify localconf.php"
   exit 1
 fi
-echo "Done."
+consoleWriteLine "Done."
 
 # Enable install tool
-echo -n "Enabling install tool..."
+consoleWriteVerbose "Enabling install tool..."
 touch "$BASE/typo3conf/FIRST_INSTALL"
-echo "Done."
+consoleWriteLineVerbose "Done."
 
 # Fix permissions
 if ! $SKIP_RIGHTS; then
-  echo -n "Adjusting access permissions for TYPO3 installation..."
+  consoleWrite "Adjusting access permissions for TYPO3 installation..."
   if ! $(id --group $HTTPD_GROUP > /dev/null); then
-    echo "Failed! The supplied group '$HTTPD_GROUP' is not known on the system."
+    consoleWriteLine "Failed! The supplied group '$HTTPD_GROUP' is not known on the system."
     exit 1
   else
+    consoleWriteLineVerbose ""
+    consoleWriteLineVerbose "Changing owner of '$BASE' to '$OWNER'..."
     sudo chown --recursive $OWNER $BASE
-    sudo chgrp --recursive $HTTPD_GROUP $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
-    sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
+    consoleWriteLineVerbose "Changing group of core TYPO3 folders to '$HTTPD_GROUP'..."
+    sudo chgrp --recursive $HTTPD_GROUP $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads $BASE/typo3/ext
+    consoleWriteLineVerbose "Changing access rights of core TYPO3 folders..."
+    sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads $BASE/typo3/ext
   fi
-  echo "Done."
+  consoleWriteLine "Done."
 fi
 
 # Fix index.php
 if $FIX_INDEXPHP; then
-  echo -n "Replacing index.php symlink with copy of original file..."
+  consoleWrite "Replacing index.php symlink with copy of original file..."
   rm -f "$BASE/index.php"
   cp "$BASE/typo3_src/index.php" "$BASE/index.php"
-  echo "Done."
+  consoleWriteLine "Done."
 fi
 
-echo
-echo "Your TYPO3 Install Tool password is: '$INSTALL_TOOL_PASSWORD'"
+consoleWriteLine ""
+consoleWriteLine "Your TYPO3 Install Tool password is: '$INSTALL_TOOL_PASSWORD'"
 
 # vim:ts=2:sw=2:expandtab:

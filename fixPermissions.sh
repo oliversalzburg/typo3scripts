@@ -1,6 +1,6 @@
 #!/bin/bash
- 
-# TYPO3 Installation Backup Restore Script
+
+# TYPO3 Permission Fix Script
 # written by Oliver Salzburg
 
 set -o nounset
@@ -11,8 +11,8 @@ SELF=$(basename "$0")
 # Show the help for this script
 function showHelp() {
   cat << EOF
-  Usage: $0 [OPTIONS] [--file=]<FILE>
-  
+  Usage: $0 [OPTIONS]
+
   Core:
   --help              Display this help and exit.
   --verbose           Display more detailed messages.
@@ -24,17 +24,11 @@ function showHelp() {
   --extract-config    Extracts configuration parameters from TYPO3.
   --base=PATH         The name of the base path where TYPO3 is 
                       installed. If no base is supplied, "typo3" is used.
-  
+
   Options:
-  --file=FILE         The file in which the backup is stored.
-  
-  Database:
-  --hostname=HOST     The name of the host where the TYPO3 database is running.
-  --username=USER     The username to use when connecting to the TYPO3
-                      database.
-  --password=PASSWORD The password to use when connecting to the TYPO3
-                      database.
-  --database=DB       The name of the database in which TYPO3 is stored.
+  --owner=OWNER       The name of the user that owns the installation.
+  --httpd-group=GROUP The user group the local HTTP daemon is running as.
+  --fix-indexphp      Replaces the index.php symlink with the actual file.
 EOF
 }
 
@@ -56,13 +50,13 @@ function extractConfig() {
 }
 
 # Check on minimal command line argument count
-REQUIRED_ARGUMENT_COUNT=1
+REQUIRED_ARGUMENT_COUNT=0
 if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
   echo "Insufficient command line arguments!" >&2
   echo "Use $0 --help to get additional information." >&2
   exit 1
 fi
- 
+
 # Script Configuration start
 # Should the script give more detailed feedback?
 VERBOSE=false
@@ -70,19 +64,20 @@ VERBOSE=false
 QUIET=false
 # Should the script ignore reasons that would otherwise cause it to abort?
 FORCE=false
-# The base directory where TYPO3 is installed
+# The base directory where TYPO3 should be installed
 BASE=typo3
-# The file to restore the backup from
-FILE=
-# The hostname of the MySQL server that TYPO3 uses
-HOST=localhost
-# The username used to connecto to that MySQL server
-USER=root
-# The password for that user
-PASS=*password*
-# The name of the database in which TYPO3 is stored
-DB=typo3
-#Script Configuration end
+# The owner of the TYPO3 installation
+OWNER=$(id --user --name)
+# The group the local http daemon is running as (usually www-data or apache)
+HTTPD_GROUP=www-data
+# Should the index.php symlink be replaced by the actual file?
+FIX_INDEXPHP=false
+# Script Configuration end
+
+# Pre-initialize the owner to the user that called sudo (if applicable)
+if [[ "$(id -u)" == "0" ]]; then
+  OWNER=$SUDO_USER
+fi
 
 function consoleWrite() {
   [ "false" == "$QUIET" ] && echo -n $* >&2
@@ -227,23 +222,20 @@ for option in $*; do
       exportConfig
       exit 0
       ;;
-    --file=*)
-      FILE=$(echo $option | cut -d'=' -f2)
+    --version=*)
+      VERSION=$(echo $option | cut -d'=' -f2)
       ;;
-    --hostname=*)
-      HOST=$(echo $option | cut -d'=' -f2)
+    --owner=*)
+      OWNER=$(echo $option | cut -d'=' -f2)
       ;;
-    --username=*)
-      USER=$(echo $option | cut -d'=' -f2)
+    --httpd-group=*)
+      HTTPD_GROUP=$(echo $option | cut -d'=' -f2)
       ;;
-    --password=*)
-      PASS=$(echo $option | cut -d'=' -f2)
-      ;;
-    --database=*)
-      DB=$(echo $option | cut -d'=' -f2)
+    --fix-indexphp)
+      FIX_INDEXPHP=true
       ;;
     *)
-      FILE=$option
+      VERSION=$option
       ;;
   esac
 done
@@ -261,77 +253,30 @@ function checkDependency() {
 }
 consoleWrite "Checking dependencies..."
 consoleWriteLineVerbose
-checkDependency wget
-checkDependency curl
-checkDependency md5sum
-checkDependency grep
-checkDependency awk
-checkDependency find
-checkDependency tar
-checkDependency mysql
+checkDependency chown
+checkDependency chgrp
+checkDependency chmod
 consoleWriteLine "Succeeded."
 
 # Begin main operation
+consoleWrite "Changing ownership of '$BASE' to '$OWNER'..."
+sudo chown --recursive $OWNER $BASE
+consoleWriteLine "Done"
 
-# Check default argument validity
-if [[ $FILE == --* ]]; then
-  consoleWriteLine "The given TYPO3 snapshot '$FILE' looks like a command line parameter."
-  consoleWriteLine "Please use --help to see a list of available command line parameters."
-  exit 1
-fi
-  
-if [[ ! -e "$FILE" ]]; then  
-  consoleWriteLine "The given snapshot '$FILE' does not exist."
-  exit 1
-fi
+consoleWrite "Changing owning group of essential TYPO3 folders to '$HTTPD_GROUP'..."
+sudo chgrp --recursive $HTTPD_GROUP $BASE $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
+consoleWriteLine "Done"
 
-# Does the base directory exist?
-if [[ ! -d $BASE ]]; then
-  consoleWriteLine "The base directory '$BASE' does not seem to exist!"
-  exit 1
-fi
+consoleWrite "Changing access permissions for essential TYPO3 folders..."
+sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
+consoleWriteLine "Done"
 
-# Is the base directory writeable?
-if [[ ! -w $BASE ]]; then
-  consoleWriteLine "The base directory '$BASE' is not writeable!"
-  exit 1
-fi
+consoleWrite "Fixing access to common files..."
+sudo chgrp $HTTPD_GROUP $BASE/.htaccess $BASE/.htpasswd $BASE/favicon.ico 2> /dev/null || true
+sudo chmod g+r $BASE/.htaccess $BASE/.htpasswd $BASE/favicon.ico 2> /dev/null || true
+consoleWriteLine "Done"
 
-# Check if we can delete the target base folder
-consoleWrite "Testing write permissions in $BASE..."
-if ! find $BASE \( -exec test -w {} \; -o \( -exec echo {} \; -quit \) \) | xargs -I {} bash -c "if [ -n "{}" ]; then consoleWriteLine Failed\!; consoleWriteLine {} is not writable\!; exit 1; fi"; then
-  exit 1
-fi
-consoleWriteLine "Succeeded"
-
-consoleWrite "Erasing current TYPO3 installation '$BASE'..."
-if ! rm --recursive --force -- $BASE > /dev/null; then
-  consoleWriteLine "Failed!"
-  exit 1
-fi
-consoleWriteLine "Done."
-
-consoleWrite "Extracting TYPO3 backup '$FILE'..."
-if ! tar --extract --gzip --file $FILE > /dev/null; then
-  consoleWriteLine "Failed!"
-  exit 1
-fi
-consoleWriteLine "Done."
-
-consoleWrite "Importing database dump..."
-set +e errexit
-_errorMessage=$(mysql --host=$HOST --user=$USER --password=$PASS --default-character-set=utf8 $DB < $BASE/database.sql 2>&1 >/dev/null)
-_status=$?
-set -e errexit
-if [[ 0 < $_status ]]; then
-  consoleWriteLine "Failed!"
-  consoleWriteLine "Error: $_errorMessage"
-  exit 1
-fi
-consoleWriteLine "Done."
-
-consoleWriteVerbose "Deleting database dump..."
-rm --force -- $BASE/database.sql
-consoleWriteLineVerbose "Done!"
-
-# vim:ts=2:sw=2:expandtab:
+consoleWrite "Fixing access to TYPO3 source packages..."
+sudo chgrp --recursive $HTTPD_GROUP $BASE/typo3_src*
+sudo chmod g+rX $BASE/typo3_src*
+consoleWriteLine "Done"

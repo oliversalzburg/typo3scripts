@@ -15,11 +15,15 @@ function showHelp() {
 
   Core:
   --help              Display this help and exit.
+  --verbose           Display more detailed messages.
+  --quiet             Do not display anything.
+  --force             Perform actions that would otherwise abort the script.
   --update            Tries to update the script to the latest version.
-  --base=PATH         The name of the base path where Typo3 is
-                      installed. If no base is supplied, "typo3" is used.
+  --update-check      Checks if a newer version of the script is available.
   --export-config     Prints the default configuration of this script.
   --extract-config    Extracts configuration parameters from TYPO3.
+  --base=PATH         The name of the base path where TYPO3 is 
+                      installed. If no base is supplied, "typo3" is used.
   
   Options:
   --extension=EXTKEY  The extension key of the extension for which to retrieve
@@ -64,6 +68,12 @@ if [[ $# -lt $REQUIRED_ARGUMENT_COUNT ]]; then
 fi
 
 # Script Configuration start
+# Should the script give more detailed feedback?
+VERBOSE=false
+# Should the script surpress all feedback?
+QUIET=false
+# Should the script ignore reasons that would otherwise cause it to abort?
+FORCE=false
 # The base directory where Typo3 is installed
 BASE=typo3
 # The hostname of the MySQL server that Typo3 uses
@@ -81,11 +91,54 @@ VERSION_FIRST=
 # The last version to list
 VERSION_LAST=
 # Should the first found version be skipped?
-SKIP_FIRST=0
+SKIP_FIRST=false
 # Script Configuration end
+
+function consoleWrite() {
+  [ "false" == "$QUIET" ] && echo -n $* >&2
+  return 0
+}
+function consoleWriteLine() {
+  [ "false" == "$QUIET" ] && echo $* >&2
+  return 0
+}
+function consoleWriteVerbose() {
+  $VERBOSE && consoleWrite $*
+  return 0
+}
+function consoleWriteLineVerbose() {
+  $VERBOSE && consoleWriteLine $*
+  return 0
+}
 
 # The base location from where to retrieve new versions of this script
 UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
+
+# Update check
+function updateCheck() {
+  if ! hash curl 2>&-; then
+    consoleWriteLine "Update checking requires curl. Check skipped."
+    return 2
+  fi
+  
+  SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
+  SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
+  
+  consoleWriteLineVerbose "Remote hash source: '$UPDATE_BASE/versions'"
+  consoleWriteLineVerbose "Own hash: '$SUM_SELF' Remote hash: '$SUM_LATEST'"
+  
+  if [[ "" == $SUM_LATEST ]]; then
+    consoleWriteLine "No update information is available for '$SELF'"
+    consoleWriteLine "Please check the project home page 'http://code.google.com/p/typo3scripts/'."
+    return 2
+    
+  elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
+    consoleWriteLine "NOTE: New version available!"
+    return 1
+  fi
+  
+  return 0
+}
 
 # Self-update
 function runSelfUpdate() {
@@ -148,34 +201,40 @@ done
 # Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 BASE_CONFIG_FILENAME="typo3scripts.conf"
 if [[ -e "$BASE_CONFIG_FILENAME" ]]; then
-  echo -n "Sourcing script configuration from $BASE_CONFIG_FILENAME..." >&2
+  consoleWriteVerbose "Sourcing script configuration from $BASE_CONFIG_FILENAME..."
   source $BASE_CONFIG_FILENAME
-  echo "Done." >&2
+  consoleWriteLineVerbose "Done."
 fi
 
 # Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 CONFIG_FILENAME=${SELF:0:${#SELF}-3}.conf
 if [[ -e "$CONFIG_FILENAME" ]]; then
-  echo -n "Sourcing script configuration from $CONFIG_FILENAME..." >&2
+  consoleWriteVerbose "Sourcing script configuration from $CONFIG_FILENAME..."
   source $CONFIG_FILENAME
-  echo "Done." >&2
+  consoleWriteLineVerbose "Done."
 fi
 
 # Read command line arguments (overwrites config file)
 for option in $*; do
   case "$option" in
+    --verbose)
+      VERBOSE=true
+      ;;
+    --quiet)
+      QUIET=true
+      ;;
+    --force)
+      FORCE=true
+      ;;
     --update)
       runSelfUpdate
       ;;
-    --base=*)
-      BASE=$(echo $option | cut -d'=' -f2)
+    --update-check)
+      updateCheck
+      exit $?
       ;;
     --export-config)
       exportConfig
-      exit 0
-      ;;
-    --extract-config)
-      extractConfig
       exit 0
       ;;
     --hostname=*)
@@ -200,7 +259,7 @@ for option in $*; do
       VERSION_LAST=$(echo $option | cut -d'=' -f2)
       ;;
     --skip-first)
-      SKIP_FIRST=1
+      SKIP_FIRST=true
       ;;
     *)
       EXTENSION=$option
@@ -210,45 +269,38 @@ done
 
 # Check for dependencies
 function checkDependency() {
+  consoleWriteVerbose "Checking dependency '$1' => "
   if ! hash $1 2>&-; then
-    echo "Failed!" >&2
-    echo "This script requires '$1' but it can not be found. Aborting." >&2
+    consoleWriteLine "Failed!"
+    consoleWriteLine "This script requires '$1' but it can not be found. Aborting."
     exit 1
   fi
+  consoleWriteLineVerbose $(which $1)
+  return 0
 }
-echo -n "Checking dependencies..." >&2
+consoleWrite "Checking dependencies..."
+consoleWriteLineVerbose
 checkDependency mysql
 checkDependency sed
-echo "Succeeded." >&2
-
-# Update check
-SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
-SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
-if [[ "" == $SUM_LATEST ]]; then
-  echo "No update information is available for '$SELF'" >&2
-  echo "Please check the project home page http://code.google.com/p/typo3scripts/." >&2
-  
-elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
-  echo "NOTE: New version available!" >&2
-fi
+consoleWriteLine "Succeeded."
 
 # Begin main operation
 
-# Check argument validity
+# Check default argument validity
 if [[ $EXTENSION == --* ]]; then
-  echo "The given extension key '$EXTENSION' looks like a command line parameter." >&2
-  echo "Please use the --extension parameter when giving multiple arguments." >&2
+  consoleWriteLine "The given extension key '$EXTENSION' looks like a command line parameter."
+  consoleWriteLine "Please use --help to see a list of available command line parameters."
   exit 1
 fi
 
 # Does the base directory exist?
 if [[ ! -d $BASE ]]; then
-  echo "The base directory '$BASE' does not seem to exist!" >&2
+  consoleWriteLine "The base directory '$BASE' does not seem to exist!"
   exit 1
 fi
 # Is the base directory readable?
 if [[ ! -r $BASE ]]; then
-  echo "The base directory '$BASE' is not readable!" >&2
+  consoleWriteLine "The base directory '$BASE' is not readable!"
   exit 1
 fi
 
@@ -286,20 +338,20 @@ function compareVersions() {
 }
 
 # Read upload comments from cached extensions data
-echo -n "Retrieving upload comment history..." >&2
+consoleWrite "Retrieving upload comment history..."
 set +e errexit
 _query="SELECT CONCAT(\`version\`,'\n',\`lastuploaddate\`,'\n',\`uploadcomment\`) FROM \`cache_extensions\` WHERE (\`extkey\` = '$EXTENSION');"
 _errorMessage=$(echo $_query | mysql --host=$HOST --user=$USER --pass=$PASS --database=$DB --batch --skip-column-names 2>&1 | sed 's/\\n/|/g' > extChangelog.out)
 _status=$?
 set -e errexit
 if [[ 0 < $_status ]]; then
-  echo "Failed!" >&2
-  echo "Error: $_errorMessage" >&2
+  consoleWriteLine "Failed!"
+  consoleWriteLine "Error: $_errorMessage"
   exit 1
 fi
-echo "Done." >&2
+consoleWriteLine "Done."
 
-_isFirstVersionFound=1
+_isFirstVersionFound=false
 while read _versionEntry; do
   _versionString=$(echo $_versionEntry | cut --delimiter=\| --fields=1 -)
   _uploadDate=$(echo $_versionEntry | cut --delimiter=\| --fields=2 -)
@@ -350,11 +402,13 @@ while read _versionEntry; do
     
   fi
   
-  if [[ 1 == $SKIP_FIRST && 1 == $_isFirstVersionFound ]]; then
-    _isFirstVersionFound=0
+  if [[ true == $SKIP_FIRST && false == $_isFirstVersionFound ]]; then
+    _isFirstVersionFound=true
     continue
   fi
   
+  # We're intentionally using echo here instead of consoleWriteLine, because we 
+  # want to write the changelog to standard out, not standard error.
   echo $_versionString \($(date --date @$_uploadDate "+%Y-%m-%d %T")\)
   _versionComment=$(echo $_versionEntry | cut --delimiter=\| --fields=3- -)
   echo "  $_versionComment" | sed 's/|/\n  /g'
