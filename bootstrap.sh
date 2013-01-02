@@ -436,7 +436,7 @@ if ! $SKIP_UNZIP_DETECT; then
 fi
 
 # Write configuration
-if ! cp $BASE/typo3conf/localconf.php $BASE/typo3conf/localconf.php.orig; then
+if ! $(cp $BASE/typo3conf/localconf.php $BASE/typo3conf/localconf.php.orig 2> /dev/null); then
   consoleWriteLine "Failed! Unable to create copy of localconf.php"
   exit 1
 fi
