@@ -346,6 +346,10 @@ if [[ -d "$BASE" && "false" == $FORCE ]]; then
   consoleWriteLine "A directory named $BASE already exists. $SELF will not overwrite existing content."
   consoleWriteLine "Please remove the folder $BASE manually and run this script again."
   exit 1
+elif [[ -e "$BASE" && "true" == $FORCE ]]; then
+  consoleWrite "Clearing '$BASE'..."
+  rm -rf "$BASE"
+  consoleWriteLine "Done."
 fi
 
 # Are we running as root?
@@ -422,7 +426,7 @@ consoleWrite "Generating localconf.php..."
 TYPO3_CONFIG=
 
 # Add database configuration
-if [[ ! $SKIP_DB_CONFIG || "true" == $SKIP_CONFIG ]]; then
+if [[ "false" == $SKIP_DB_CONFIG && "false" == $SKIP_CONFIG ]]; then
   TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_username = '$USER';\n"
   TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_password = '$PASS';\n"
   TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_host     = '$HOST';\n"
@@ -432,14 +436,14 @@ if [[ ! $SKIP_DB_CONFIG || "true" == $SKIP_CONFIG ]]; then
 fi
 
 # Write TYPO3 install tool password
-if [[ "true" != $SKIP_CONFIG ]]; then
+if [[ "false" == $SKIP_CONFIG ]]; then
   INSTALL_TOOL_PASSWORD_HASH=$(echo -n $INSTALL_TOOL_PASSWORD | md5sum | awk '{print $1}')
   TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['BE']['installToolPassword'] = '$INSTALL_TOOL_PASSWORD_HASH';\n"
 fi
 
 # Add GraphicsMagick (if available)
 # TODO: Setting [GFX][im_no_effects] = 1 should be preferred over using GM due to GM's problems when converting .pdf and .psd documents
-if [[ ! $SKIP_GM_DETECT || "true" == $SKIP_CONFIG ]]; then
+if [[ "false" == $SKIP_GM_DETECT && "false" == $SKIP_CONFIG ]]; then
   if ! hash gm 2>&-; then
     newLineOnce
     consoleWriteLine "  Could not find GraphicsMagick binary. im_version_5 will not be set."
@@ -450,7 +454,7 @@ if [[ ! $SKIP_GM_DETECT || "true" == $SKIP_CONFIG ]]; then
 fi
 
 # Add unzip utility
-if [[ ! $SKIP_UNZIP_DETECT || "true" == $SKIP_CONFIG ]]; then
+if [[ "false" == $SKIP_UNZIP_DETECT && "false" == $SKIP_CONFIG ]]; then
   if ! hash unzip 2>&-; then
     newLineOnce
     consoleWriteLine "  Could not find unzip binary. unzip_path will not be set."
