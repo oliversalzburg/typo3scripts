@@ -27,6 +27,7 @@ function showHelp() {
 
   Options:
   --version=VERSION   The version to install.
+  --skip-config       Skips writing any configuration data/file.
   --skip-db-config    Skips writing the database configuration to localconf.php
   --skip-gm-detect    Skips the detection of GraphicsMagick.
   --skip-unzip-detect Skips the detection of the unzip utility.
@@ -80,7 +81,7 @@ FORCE=false
 # The base directory where TYPO3 should be installed
 BASE=typo3
 # The version to install
-VERSION=4.7.1
+VERSION=4.7.7
 # The hostname of the MySQL server that TYPO3 uses
 HOST=localhost
 # The username used to connect to that MySQL server
@@ -89,6 +90,8 @@ USER=*username*
 PASS=*password*
 # The name of the database in which TYPO3 is stored
 DB=typo3
+# Should writing the configuration be skipped?
+SKIP_CONFIG=false
 # Should the database configuration be written to the TYPO3 configuration?
 SKIP_DB_CONFIG=false
 # Should the detection of GraphicsMagick be skipped?
@@ -265,6 +268,9 @@ for option in $*; do
     --version=*)
       VERSION=$(echo $option | cut -d'=' -f2)
       ;;
+    --skip-config)
+      SKIP_CONFIG=true
+      ;;
     --skip-db-config)
       SKIP_DB_CONFIG=true
       ;;
@@ -350,6 +356,15 @@ if [[ "$(id -u)" != "0" ]]; then
   fi
 fi
 
+# Is the user requesting a TYPO3 6.x branch?
+if [[ $VERSION == 6.* ]]; then
+  consoleWriteLine "The TYPO3 6.0 configuration file format is not supported by $SELF. Database configuration will be skipped."
+  SKIP_DB_CONFIG=true
+  SKIP_GM_DETECT=true
+  SKIP_UNZIP_DETECT=true
+  SKIP_CONFIG=true
+fi
+
 # The name of the package
 VERSION_NAME=blankpackage-$VERSION
 # The name of the file that contains the package
@@ -407,7 +422,7 @@ consoleWrite "Generating localconf.php..."
 TYPO3_CONFIG=
 
 # Add database configuration
-if ! $SKIP_DB_CONFIG; then
+if [[ ! $SKIP_DB_CONFIG || "true" == $SKIP_CONFIG ]]; then
   TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_username = '$USER';\n"
   TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_password = '$PASS';\n"
   TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_host     = '$HOST';\n"
@@ -417,12 +432,14 @@ if ! $SKIP_DB_CONFIG; then
 fi
 
 # Write TYPO3 install tool password
-INSTALL_TOOL_PASSWORD_HASH=$(echo -n $INSTALL_TOOL_PASSWORD | md5sum | awk '{print $1}')
-TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['BE']['installToolPassword'] = '$INSTALL_TOOL_PASSWORD_HASH';\n"
+if [[ "true" != $SKIP_CONFIG ]]; then
+  INSTALL_TOOL_PASSWORD_HASH=$(echo -n $INSTALL_TOOL_PASSWORD | md5sum | awk '{print $1}')
+  TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['BE']['installToolPassword'] = '$INSTALL_TOOL_PASSWORD_HASH';\n"
+fi
 
 # Add GraphicsMagick (if available)
 # TODO: Setting [GFX][im_no_effects] = 1 should be preferred over using GM due to GM's problems when converting .pdf and .psd documents
-if ! $SKIP_GM_DETECT; then
+if [[ ! $SKIP_GM_DETECT || "true" == $SKIP_CONFIG ]]; then
   if ! hash gm 2>&-; then
     newLineOnce
     consoleWriteLine "  Could not find GraphicsMagick binary. im_version_5 will not be set."
@@ -433,7 +450,7 @@ if ! $SKIP_GM_DETECT; then
 fi
 
 # Add unzip utility
-if ! $SKIP_UNZIP_DETECT; then
+if [[ ! $SKIP_UNZIP_DETECT || "true" == $SKIP_CONFIG ]]; then
   if ! hash unzip 2>&-; then
     newLineOnce
     consoleWriteLine "  Could not find unzip binary. unzip_path will not be set."
@@ -444,16 +461,18 @@ if ! $SKIP_UNZIP_DETECT; then
 fi
 
 # Write configuration
-if ! $(cp $BASE/typo3conf/localconf.php $BASE/typo3conf/localconf.php.orig 2> /dev/null); then
-  consoleWriteLine "Failed! Unable to create copy of localconf.php"
-  exit 1
+if [[ "true" != $SKIP_CONFIG ]]; then
+  if ! $(cp $BASE/typo3conf/localconf.php $BASE/typo3conf/localconf.php.orig 2> /dev/null); then
+    consoleWriteLine "Failed! Unable to create copy of localconf.php"
+    exit 1
+  fi
+  
+  if ! sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/localconf.php.orig > $BASE/typo3conf/localconf.php; then
+    consoleWriteLine "Failed! Unable to modify localconf.php"
+    exit 1
+  fi
+  consoleWriteLine "Done."
 fi
-
-if ! sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/localconf.php.orig > $BASE/typo3conf/localconf.php; then
-  consoleWriteLine "Failed! Unable to modify localconf.php"
-  exit 1
-fi
-consoleWriteLine "Done."
 
 # Enable install tool
 consoleWriteVerbose "Enabling install tool..."
@@ -486,7 +505,9 @@ if $FIX_INDEXPHP; then
   consoleWriteLine "Done."
 fi
 
-consoleWriteLine ""
-consoleWriteLine "Your TYPO3 Install Tool password is: '$INSTALL_TOOL_PASSWORD'"
+if [[ "true" != $SKIP_CONFIG ]]; then
+  consoleWriteLine ""
+  consoleWriteLine "Your TYPO3 Install Tool password is: '$INSTALL_TOOL_PASSWORD'"
+fi
 
 # vim:ts=2:sw=2:expandtab:
