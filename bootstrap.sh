@@ -358,14 +358,22 @@ VERSION_FILENAME=$VERSION_NAME.tar.gz
 TYPO3_DOWNLOAD_URL=http://prdownloads.sourceforge.net/typo3/$VERSION_FILENAME
 
 consoleWriteVerbose "Looking for TYPO3 package at '$VERSION_FILENAME'..."
-if [[ ! -e "$VERSION_FILENAME" ]]; then
-  consoleWriteLineVerbose "NOT found!"
+if [[ ! -e "$VERSION_FILENAME" || "true" == $FORCE ]]; then
+  if [[ ! "true" == $FORCE ]]; then
+    consoleWriteLineVerbose "NOT found!"
+  else
+    consoleWriteLineVerbose "ignored!"
+  fi
   consoleWrite "Downloading $TYPO3_DOWNLOAD_URL..."
   wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILENAME
 else
   consoleWriteLineVerbose "Found!"
   consoleWrite "Trying to resume download from '$TYPO3_DOWNLOAD_URL'..."
-  wget --quiet --continue $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILENAME
+  if ! wget --quiet --continue $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILENAME; then
+    consoleWriteLine "Failed!"
+    consoleWriteLine "Possibly, the download could not be resumed. Either call $SELF with --force or delete the partially downloaded '$VERSION_FILENAME' manually."
+    exit 1
+  fi
 fi
 consoleWriteLine "Done."
 
