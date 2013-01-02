@@ -422,8 +422,10 @@ function newLineOnce() {
   _NEWLINE_PRINTED=true
 }
 
-consoleWrite "Generating localconf.php..."
-TYPO3_CONFIG=
+if [[ "true" != $SKIP_CONFIG ]]; then
+  consoleWrite "Generating localconf.php..."
+  TYPO3_CONFIG=
+fi
 
 # Add database configuration
 if [[ "false" == $SKIP_DB_CONFIG && "false" == $SKIP_CONFIG ]]; then
