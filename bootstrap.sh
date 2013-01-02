@@ -342,7 +342,7 @@ if [[ $VERSION == --* ]]; then
 fi
 
 # Check for existing installations
-if [[ -d "$BASE" ]]; then
+if [[ -d "$BASE" && "false" == $FORCE ]]; then
   consoleWriteLine "A directory named $BASE already exists. $SELF will not overwrite existing content."
   consoleWriteLine "Please remove the folder $BASE manually and run this script again."
   exit 1
