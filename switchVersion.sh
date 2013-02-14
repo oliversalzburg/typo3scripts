@@ -27,6 +27,7 @@ function showHelp() {
   
   Options:
   --version=VERSION   The version to switch to.
+  --store=PATH        Where your TYPO3 packages are stored
 EOF
 }
 
@@ -58,7 +59,7 @@ fi
 # Script Configuration start
 # Should the script give more detailed feedback?
 VERBOSE=false
-# Should the script surpress all feedback?
+# Should the script suppress all feedback?
 QUIET=false
 # Should the script ignore reasons that would otherwise cause it to abort?
 FORCE=false
@@ -66,6 +67,8 @@ FORCE=false
 BASE=typo3
 # The version to switch to
 VERSION=6.0.0
+# Where the TYPO3 packages are stored
+STORE=$BASE
 # Script Configuration end
 
 function consoleWrite() {
@@ -214,6 +217,9 @@ for option in $*; do
     --version=*)
       VERSION=$(echo $option | cut -d'=' -f2)
       ;;
+    --store=*)
+      STORE=$(echo $option | cut -d'=' -f2)
+      ;;
     *)
       VERSION=$option
       ;;
@@ -250,15 +256,23 @@ if [[ $VERSION == --* ]]; then
   exit 1
 fi
 
+# Check if package store exists
+if [[ ! -d $STORE ]]; then
+  consoleWriteLine "The given TYPO3 package store '$STORE' does not exist."
+  exit 1
+else
+  consoleWriteLine "Using TYPO3 package store '$STORE'."
+fi
+
 # The name of the package
 VERSION_NAME=typo3_src-$VERSION
 # The name of the file that contains the package
 VERSION_FILENAME=$VERSION_NAME.tar.gz
 # The location where the package can be downloaded
 TYPO3_DOWNLOAD_URL=http://prdownloads.sourceforge.net/typo3/$VERSION_FILENAME
-VERSION_FILE=$BASE/$VERSION_FILENAME
+VERSION_FILE=$STORE/$VERSION_FILENAME
 VERSION_DIRNAME=typo3_src-$VERSION
-VERSION_DIR=$BASE/$VERSION_DIRNAME/
+VERSION_DIR=$STORE/$VERSION_DIRNAME/
 SYMLINK=$BASE/typo3_src
 
 consoleWriteVerbose "Looking for TYPO3 source package at '$VERSION_DIR'..."
@@ -275,6 +289,10 @@ else
       exit 1
     fi
   else
+    if [[ ! -w $VERSION_FILE ]]; then
+      consoleWriteLine "Unable to write to '$VERSION_FILE'. Check permissions."
+      exit 1
+    fi
     consoleWriteLineVerbose "NOT found! Downloading."
     consoleWrite "Downloading $TYPO3_DOWNLOAD_URL..."
     if ! wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE; then
