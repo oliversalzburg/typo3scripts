@@ -297,8 +297,8 @@ else
       exit 1
     fi
   else
-    if [[ ! -w $VERSION_FILE ]]; then
-      consoleWriteLine "Unable to write to '$VERSION_FILE'. Check permissions."
+    if [[ ! -w $STORE ]]; then
+      consoleWriteLine "Unable to write to '$STORE'. Check permissions."
       exit 1
     fi
     consoleWriteLineVerbose "NOT found! Downloading."
@@ -324,7 +324,7 @@ if ! rm --force -- $SYMLINK; then
   consoleWriteLine "Failed! Unable to remove old symlink '$SYMLINK'"
   exit 1
 fi
-if ! ln --symbolic $VERSION_DIRNAME $SYMLINK; then
+if ! ln --symbolic ../$VERSION_DIR $SYMLINK; then
   consoleWriteLine "Failed! Unable to create new symlink '$SYMLINK'"
   exit 1
 fi
