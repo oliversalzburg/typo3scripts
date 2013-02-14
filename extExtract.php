@@ -208,6 +208,10 @@ foreach( $argv as $_option ) {
 // Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 $BASE_CONFIG_FILENAME = "typo3scripts.conf";
 if( file_exists( $BASE_CONFIG_FILENAME ) ) {
+  if( is_readable( $BASE_CONFIG_FILENAME ) ) {
+    file_put_contents( "php://stderr", "Unable to read '" . $BASE_CONFIG_FILENAME "'. Check permissions." );
+    exit( 1 );
+  }
   if( $VERBOSE ) file_put_contents( "php://stderr", "Sourcing script configuration from " . $BASE_CONFIG_FILENAME . "..." );
   $_baseConfig = file_get_contents( $BASE_CONFIG_FILENAME );
   $_baseConfigFixed = preg_replace( "/^(?!\s*$)(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_baseConfig );
@@ -218,6 +222,10 @@ if( file_exists( $BASE_CONFIG_FILENAME ) ) {
 // Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 $CONFIG_FILENAME = substr( SELF, 0, -4 ) . ".conf";
 if( file_exists( $CONFIG_FILENAME ) ) {
+  if( is_readable( $CONFIG_FILENAME ) ) {
+    file_put_contents( "php://stderr", "Unable to read '" . $CONFIG_FILENAME "'. Check permissions." );
+    exit( 1 );
+  }
   if( $VERBOSE ) file_put_contents( "php://stderr", "Sourcing script configuration from " . $CONFIG_FILENAME . "..." );
   $_config = file_get_contents( $CONFIG_FILENAME );
   $_configFixed = preg_replace( "/^(?!\s*$)(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_config );
