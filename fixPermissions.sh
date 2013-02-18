@@ -266,6 +266,15 @@ checkDependency chgrp
 checkDependency chmod
 consoleWriteLine "Succeeded."
 
+# Non-existent typo3temp folders are problematic during runtime
+# We want the web user to be able to write IN it, but not create it.
+# So, we're doing it right here
+if [[ ! -d "$BASE/typo3temp" ]]; then
+  consoleWrite "Creating '$BASE/typo3temp'..."
+  mkdir "$BASE/typo3temp"
+  consoleWriteLine "Done"
+fi
+
 # Begin main operation
 consoleWrite "Changing ownership of '$BASE' to '$OWNER'..."
 sudo chown --recursive $OWNER $BASE
