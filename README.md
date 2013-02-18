@@ -2,32 +2,40 @@ This is a collection of shell scripts that aid in TYPO3 deployment and maintenan
 
 The scripts in this project and their primary intended purpose are outlined as such:
 
- * [bootstrap.sh](wiki/BootstrapSh) - Starting a new TYPO3 installation.
- * [createBackup.sh](wiki/CreateBackupSh) - Creates a snapshot of a TYPO3 installation.
- * [RestoreBackupSh restoreBackup.sh] - Restores aforementioned snapshots.
- * [SwitchVersionSh switchVersion.sh] - Switches between multiple versions of the TYPO3 core package.
- * [FixPermissionsSh fixPermissions.sh] - Fixes access permissions on the files of a TYPO3 installation.
+- [bootstrap.sh](wiki/BootstrapSh)  
+  Starting a new TYPO3 installation.
+- [createBackup.sh](wiki/CreateBackupSh)  
+  Creates a snapshot of a TYPO3 installation.
+- [restoreBackup.sh](wiki/RestoreBackupSh)  
+  Restores aforementioned snapshots.
+- [switchVersion.sh](wiki/SwitchVersionSh)  
+  Switches between multiple versions of the TYPO3 core package.
+- [fixPermissions.sh](wiki/FixPermissionsSh)  
+  Fixes access permissions on the files of a TYPO3 installation.
+- [extChangelog.sh](wiki/ExtChangelogSh)  
+  Retrieve the upload comment history for an extension.
+- [extUpdate.sh](wiki/ExtUpdateSh)  
+  Retrieve update information for an extension (or all extensions) directly from the shell.
+- [extExtract.php](wiki/ExtExtractPhp)  
+  Extract and save or display the contents of a `.t3x` file.
 
-Currently development is focused on scripts providing assistance in TYPO3 extension management. Such as:
 
- * [ExtChangelogSh extChangelog.sh] - Retrieve the upload comment history for an extension.
- * [ExtUpdateSh extUpdate.sh] - Retrieve update information for an extension (or all extensions) directly from the shell.
- * [ExtExtractPhp extExtract.php] - Extract and save or display the contents of a `.t3x` file.
-These scripts have only lately been merged into the main project. They are more likely to change in later revisions. You may want to keep a look on the [http://code.google.com/p/typo3scripts/source/browse/#svn%2Fbranches%2Fdev development branch].
 
 ## Downloads
 
-Any downloads/packages in this project are provided for convenience only.  The recommended way of obtaining a needed script is directly from the source repository like so:
+After moving to GitHub, we no longer provide any pre-packaged downloads. If you want to retrieve the scripts without the use of git, please use the the [download as ZIP](archive/master.zip) feature. 
 
-    $ wget http://typo3scripts.googlecode.com/svn/trunk/bootstrap.sh
+The recommended way of obtaining a needed script is directly from the source repository like so:
+
+    $ wget https://raw.github.com/oliversalzburg/typo3scripts/master/bootstrap.sh
 
 You can obtain the latest development version of a script the same way:
 
-    $ wget http://typo3scripts.googlecode.com/svn/branches/dev/bootstrap.sh
+    $ wget https://raw.github.com/oliversalzburg/typo3scripts/dev/bootstrap.sh
 
-Optionally, you can pull all scripts directly into a local _working copy_ and make use of SVN to keep your scripts updated:
+Optionally, you can clone the whole project:
 
-    $ svn checkout http://typo3scripts.googlecode.com/svn/trunk/ /var/www/my-typo3-site/
+    $ git clone git://github.com/oliversalzburg/typo3scripts.git /var/www/my-typo3-site/
 
 ## Usage Examples
 These usage examples should give a quick overview of the main, intended purpose of the provided scripts. For additional applications of these scripts, please see their dedicated wiki pages (as available).
