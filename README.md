@@ -3,7 +3,7 @@ This is a collection of shell scripts that aid in TYPO3 deployment and maintenan
 The scripts in this project and their primary intended purpose are outlined as such:
 
 - [bootstrap.sh](wiki/BootstrapSh)  
-  Starting a new TYPO3 installation.
+  Starting a new TYPO3 installation (no relation to Twitter Bootstrap).
 - [createBackup.sh](wiki/CreateBackupSh)  
   Creates a snapshot of a TYPO3 installation.
 - [restoreBackup.sh](wiki/RestoreBackupSh)  
@@ -99,4 +99,4 @@ In the latest development builds, you're able to restore a backup made on a diff
     Extracting TYPO3 backup 'typo3-2012-11-28-16-32.tgz'...Done.
     Importing database dump...Done.
 
-You may have to utilize [FixPermissionsSh] afterwards to adjust permissions for your webserver user. You'll also have to adjust your database settings and domain records in the cloned TYPO3 instance afterwards.
+You may have to utilize [fixPermissions.sh](wiki/FixPermissionsSh) afterwards to adjust permissions for your webserver user. You'll also have to adjust your database settings and domain records in the cloned TYPO3 instance afterwards.
