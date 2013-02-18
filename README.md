@@ -2,8 +2,8 @@ This is a collection of shell scripts that aid in TYPO3 deployment and maintenan
 
 The scripts in this project and their primary intended purpose are outlined as such:
 
- * [bootstrap.sh](BootstrapSh) - Starting a new TYPO3 installation.
- * [[createBackup.sh|CreateBackupSh]] - Creates a snapshot of a TYPO3 installation.
+ * [bootstrap.sh](wiki/BootstrapSh) - Starting a new TYPO3 installation.
+ * [createBackup.sh](wiki/CreateBackupSh) - Creates a snapshot of a TYPO3 installation.
  * [RestoreBackupSh restoreBackup.sh] - Restores aforementioned snapshots.
  * [SwitchVersionSh switchVersion.sh] - Switches between multiple versions of the TYPO3 core package.
  * [FixPermissionsSh fixPermissions.sh] - Fixes access permissions on the files of a TYPO3 installation.
