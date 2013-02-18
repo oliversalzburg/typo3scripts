@@ -272,11 +272,11 @@ sudo chown --recursive $OWNER $BASE
 consoleWriteLine "Done"
 
 consoleWrite "Changing owning group of essential TYPO3 folders to '$HTTPD_GROUP'..."
-sudo chgrp --recursive $HTTPD_GROUP $BASE $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
+sudo chgrp --recursive $HTTPD_GROUP $BASE $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads 2> /dev/null || true
 consoleWriteLine "Done"
 
 consoleWrite "Changing access permissions for essential TYPO3 folders..."
-sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
+sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads 2> /dev/null || true
 consoleWriteLine "Done"
 
 consoleWrite "Fixing access to common files..."
@@ -288,3 +288,5 @@ consoleWrite "Fixing access to TYPO3 source packages..."
 sudo chgrp --recursive $HTTPD_GROUP $BASE/typo3_src*
 sudo chmod g+rX $BASE/typo3_src*
 consoleWriteLine "Done"
+
+# vim:ts=2:sw=2:expandtab:
