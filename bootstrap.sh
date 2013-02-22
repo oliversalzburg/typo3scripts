@@ -300,6 +300,9 @@ for option in $*; do
     --fix-indexphp)
       FIX_INDEXPHP=true
       ;;
+    --base=*)
+      BASE=$(echo $option | cut -d'=' -f2)
+      ;;
     --hostname=*)
       HOST=$(echo $option | cut -d'=' -f2)
       ;;

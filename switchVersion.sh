@@ -319,7 +319,7 @@ else
 fi
 
 # Switch symlink
-consoleWrite "Switching TYPO3 source symlink to $VERSION_DIR..."
+consoleWrite "Switching TYPO3 source symlink to '$VERSION_DIR'..."
 if ! rm --force -- $SYMLINK; then
   consoleWriteLine "Failed! Unable to remove old symlink '$SYMLINK'"
   exit 1
@@ -342,6 +342,27 @@ if [[ -h "$INDEX_PHP" ]]; then
   consoleWriteLineVerbose "Done."
 else
   consoleWriteLineVerbose "Skipped."
+fi
+
+# Check important TYPO3 symlinks
+PATH_T3LIB=$BASE/t3lib
+T3LIB_TARGET=typo3_src/t3lib
+consoleWrite "Checking 't3lib' symlink..."
+if [[ ! -h "$PATH_T3LIB" ]]; then
+  ln --symbolic "$T3LIB_TARGET" "$PATH_T3LIB"
+  consoleWriteLine "Created."
+else
+  consoleWriteLine "Skipped."
+fi
+
+PATH_TYPO3=$BASE/typo3
+TYPO3_TARGET=typo3_src/typo3
+consoleWrite "Checking 'typo3' symlink..."
+if [[ ! -h "$PATH_TYPO3" ]]; then
+  ln --symbolic "$TYPO3_TARGET" "$PATH_TYPO3"
+  consoleWriteLine "Created."
+else
+  consoleWriteLine "Skipped."
 fi
 
 # Delete old, cached files

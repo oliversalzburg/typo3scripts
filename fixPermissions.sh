@@ -266,17 +266,26 @@ checkDependency chgrp
 checkDependency chmod
 consoleWriteLine "Succeeded."
 
+# Non-existent typo3temp folders are problematic during runtime
+# We want the web user to be able to write IN it, but not create it.
+# So, we're doing it right here
+if [[ ! -d "$BASE/typo3temp" ]]; then
+  consoleWrite "Creating '$BASE/typo3temp'..."
+  mkdir "$BASE/typo3temp"
+  consoleWriteLine "Done"
+fi
+
 # Begin main operation
 consoleWrite "Changing ownership of '$BASE' to '$OWNER'..."
 sudo chown --recursive $OWNER $BASE
 consoleWriteLine "Done"
 
 consoleWrite "Changing owning group of essential TYPO3 folders to '$HTTPD_GROUP'..."
-sudo chgrp --recursive $HTTPD_GROUP $BASE $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
+sudo chgrp --recursive $HTTPD_GROUP $BASE $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads 2> /dev/null || true
 consoleWriteLine "Done"
 
 consoleWrite "Changing access permissions for essential TYPO3 folders..."
-sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
+sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads 2> /dev/null || true
 consoleWriteLine "Done"
 
 consoleWrite "Fixing access to common files..."
@@ -288,3 +297,5 @@ consoleWrite "Fixing access to TYPO3 source packages..."
 sudo chgrp --recursive $HTTPD_GROUP $BASE/typo3_src*
 sudo chmod g+rX $BASE/typo3_src*
 consoleWriteLine "Done"
+
+# vim:ts=2:sw=2:expandtab:

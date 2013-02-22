@@ -123,13 +123,13 @@ function updateCheck() {
   if( !$_isListed ) {
     file_put_contents( "php://stderr", "No update information is available for '" . SELF . "'.\n" );
     file_put_contents( "php://stderr", "Please check the project home page http://code.google.com/p/typo3scripts/.\n" );
-    return 2
+    return 2;
     
   } else if( $_sumSelf != $_sumLatest[ 1 ] ) {
     file_put_contents( "php://stderr", "NOTE: New version available!\n" );
-    return 1
+    return 1;
   }
-  return 0
+  return 0;
 }
 
 /**
@@ -209,7 +209,7 @@ foreach( $argv as $_option ) {
 $BASE_CONFIG_FILENAME = "typo3scripts.conf";
 if( file_exists( $BASE_CONFIG_FILENAME ) ) {
   if( is_readable( $BASE_CONFIG_FILENAME ) ) {
-    file_put_contents( "php://stderr", "Unable to read '" . $BASE_CONFIG_FILENAME "'. Check permissions." );
+    file_put_contents( "php://stderr", "Unable to read '" . $BASE_CONFIG_FILENAME . "'. Check permissions." );
     exit( 1 );
   }
   if( $VERBOSE ) file_put_contents( "php://stderr", "Sourcing script configuration from " . $BASE_CONFIG_FILENAME . "..." );
@@ -223,7 +223,7 @@ if( file_exists( $BASE_CONFIG_FILENAME ) ) {
 $CONFIG_FILENAME = substr( SELF, 0, -4 ) . ".conf";
 if( file_exists( $CONFIG_FILENAME ) ) {
   if( is_readable( $CONFIG_FILENAME ) ) {
-    file_put_contents( "php://stderr", "Unable to read '" . $CONFIG_FILENAME "'. Check permissions." );
+    file_put_contents( "php://stderr", "Unable to read '" . $CONFIG_FILENAME . "'. Check permissions." );
     exit( 1 );
   }
   if( $VERBOSE ) file_put_contents( "php://stderr", "Sourcing script configuration from " . $CONFIG_FILENAME . "..." );
@@ -249,7 +249,7 @@ foreach( $argv as $_option ) {
     runSelfUpdate();
     
   } else if( 0 === strpos( $_option, "--update-check" ) ) {
-    $returnValue = updateCheck()
+    $returnValue = updateCheck();
     exit( $returnValue );
 
   } else if( 0 === strpos( $_option, "--base=" ) ) {
@@ -496,12 +496,12 @@ if( $EXTRACT === "true" ) {
     // is_dir() and mkdir() seem highly unreliable in their return values,
     // so we must ignore failures on mkdir() and have to catch issues later.
     if( FALSE === is_dir( $_fullPathName ) ) {
-      if( $VERBOSE ) && file_put_contents( "php://stderr", "Creating directory '$_fullPathName'.\n" );
+      if( $VERBOSE ) file_put_contents( "php://stderr", "Creating directory '$_fullPathName'.\n" );
       @mkdir( $_fullPathName, 0700, true );
     }
     
     $_fullFileName = $OUTPUTDIR . "/" . $_file[ "name" ];
-    if( $VERBOSE ) && file_put_contents( "php://stderr", "Writing file '$_fullFileName'.\n" );
+    if( $VERBOSE ) file_put_contents( "php://stderr", "Writing file '$_fullFileName'.\n" );
     if( FALSE === file_put_contents( $_fullFileName, $_file[ "content" ] ) ) {
       file_put_contents( "php://stderr", "Error: Failed to write file '$_fullFileName'.\n" );
     }
