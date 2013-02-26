@@ -106,7 +106,7 @@ $FORCE_VERSION="";
 # Script Configuration end
 
 // The base location from where to retrieve new versions of this script
-$UPDATE_BASE = "http://typo3scripts.googlecode.com/svn/trunk";
+$UPDATE_BASE = "https://raw.github.com/oliversalzburg/typo3scripts/master";
 
 /**
  * Update check
@@ -122,7 +122,7 @@ function updateCheck() {
   $_isListed = preg_match( "/^" . SELF . " (?P<sum>[0-9a-zA-Z]{32})/ms", $_contentVersions, $_sumLatest );
   if( !$_isListed ) {
     file_put_contents( "php://stderr", "No update information is available for '" . SELF . "'.\n" );
-    file_put_contents( "php://stderr", "Please check the project home page http://code.google.com/p/typo3scripts/.\n" );
+    file_put_contents( "php://stderr", "Please check the project home page https://github.com/oliversalzburg/typo3scripts.\n" );
     return 2;
     
   } else if( $_sumSelf != $_sumLatest[ 1 ] ) {
