@@ -2,21 +2,21 @@ This is a collection of shell scripts that aid in TYPO3 deployment and maintenan
 
 The scripts in this project and their primary intended purpose are outlined as such:
 
-- [bootstrap.sh](wiki/BootstrapSh)  
+- [bootstrap.sh](https://github.com/oliversalzburg/typo3scripts/wiki/BootstrapSh)  
   Starting a new TYPO3 installation (no relation to Twitter Bootstrap).
-- [createBackup.sh](wiki/CreateBackupSh)  
+- [createBackup.sh](https://github.com/oliversalzburg/typo3scripts/wiki/CreateBackupSh)  
   Creates a snapshot of a TYPO3 installation.
-- [restoreBackup.sh](wiki/RestoreBackupSh)  
+- [restoreBackup.sh](https://github.com/oliversalzburg/typo3scripts/wiki/RestoreBackupSh)  
   Restores aforementioned snapshots.
-- [switchVersion.sh](wiki/SwitchVersionSh)  
+- [switchVersion.sh](https://github.com/oliversalzburg/typo3scripts/wiki/SwitchVersionSh)  
   Switches between multiple versions of the TYPO3 core package.
-- [fixPermissions.sh](wiki/FixPermissionsSh)  
+- [fixPermissions.sh](https://github.com/oliversalzburg/typo3scripts/wiki/FixPermissionsSh)  
   Fixes access permissions on the files of a TYPO3 installation.
-- [extChangelog.sh](wiki/ExtChangelogSh)  
+- [extChangelog.sh](https://github.com/oliversalzburg/typo3scripts/wiki/ExtChangelogSh)  
   Retrieve the upload comment history for an extension.
-- [extUpdate.sh](wiki/ExtUpdateSh)  
+- [extUpdate.sh](https://github.com/oliversalzburg/typo3scripts/wiki/ExtUpdateSh)  
   Retrieve update information for an extension (or all extensions) directly from the shell.
-- [extExtract.php](wiki/ExtExtractPhp)  
+- [extExtract.php](https://github.com/oliversalzburg/typo3scripts/wiki/ExtExtractPhp)  
   Extract and save or display the contents of a `.t3x` file.
 
 
