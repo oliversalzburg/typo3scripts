@@ -25,6 +25,10 @@ function showHelp() {
   --base=PATH         The name of the base path where TYPO3 is 
                       installed. If no base is supplied, "typo3" is used.
   
+  Options:
+  --exclude=regex     Will exclude files that match the pattern from the 
+                      backup.
+                      
   Database:
   --hostname=HOST     The name of the host where the TYPO3 database is running.
   --username=USER     The username to use when connecting to the TYPO3
@@ -77,6 +81,8 @@ USER=*username*
 PASS=*password*
 # The name of the database in which TYPO3 is stored
 DB=typo3
+# The patterns that describe files that should not be included in the backup
+EXCLUDE=()
 # Script Configuration end
 
 function consoleWrite() {
@@ -249,12 +255,18 @@ for option in $*; do
     --database=*)
       DB=$(echo $option | cut -d'=' -f2)
       ;;
+    --exclude=*)
+      EXCLUDE+=($(echo $option | cut -d'=' -f2))
+      ;;
     *)
       echo "Unrecognized option \"$option\""
       exit 1
       ;;
   esac
 done
+
+echo Ignoring ${EXCLUDE[@]}
+exit 1
 
 # Check for dependencies
 function checkDependency() {
