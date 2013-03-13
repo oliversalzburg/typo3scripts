@@ -26,6 +26,7 @@ function showHelp() {
                       installed. If no base is supplied, "typo3" is used.
   
   Options:
+  --skip-db           Skips dumping the database before creating the archive.
   --exclude=regex     Will exclude files that match the pattern from the 
                       backup.
                       
@@ -81,6 +82,8 @@ USER=*username*
 PASS=*password*
 # The name of the database in which TYPO3 is stored
 DB=typo3
+# Skip dumping the database before archiving
+SKIP_DB=false
 # The patterns that describe files that should not be included in the backup
 EXCLUDE=()
 # Script Configuration end
@@ -255,6 +258,9 @@ for option in $*; do
     --database=*)
       DB=$(echo $option | cut -d'=' -f2)
       ;;
+    --skip-db)
+      SKIP_DB=true
+      ;;
     --exclude=*)
       EXCLUDE+=($(echo $option | cut -d'=' -f2))
       ;;
@@ -306,22 +312,27 @@ FILE=$BASE-$(date +%Y-%m-%d-%H-%M).tgz
 consoleWriteLine "Creating TYPO3 backup '$FILE'..."
 
 # Create database dump
-consoleWrite "Creating database dump at '$BASE/database.sql'..."
-set +e errexit
-_errorMessage=$(mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database $DB 2>&1 > $BASE/database.sql)
-_status=$?
-set -e errexit
-if [[ 0 < $_status ]]; then
-  consoleWriteLine "Failed!"
-  consoleWriteLine "Error: $_errorMessage"
-  exit 1
+if [[ "false" == $SKIP_DB ]]; then
+  consoleWrite "Creating database dump at '$BASE/database.sql'..."
+  set +e errexit
+  _errorMessage=$(mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database $DB 2>&1 > $BASE/database.sql)
+  _status=$?
+  set -e errexit
+  if [[ 0 < $_status ]]; then
+    consoleWriteLine "Failed!"
+    consoleWriteLine "Error: $_errorMessage"
+    exit 1
+  fi
+  consoleWriteLine "Done."
+else
+  consoleWriteLine Skipping database export.
 fi
-consoleWriteLine "Done."
 
 
 # Create backup archive
+_excludes=
 for excludePattern in "${EXCLUDE[@]}"; do
-  _excludes=$_excludes --exclude $excludePattern
+  _excludes+="--exclude $excludePattern "
 done
 
 _statusMessage="Compressing TYPO3 installation..."
