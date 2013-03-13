@@ -265,9 +265,6 @@ for option in $*; do
   esac
 done
 
-echo Ignoring ${EXCLUDE[@]}
-exit 1
-
 # Check for dependencies
 function checkDependency() {
   consoleWriteVerbose "Checking dependency '$1' => "
@@ -323,12 +320,16 @@ consoleWriteLine "Done."
 
 
 # Create backup archive
+for excludePattern in "${EXCLUDE[@]}"; do
+  _excludes=$_excludes --exclude $excludePattern
+done
+
 _statusMessage="Compressing TYPO3 installation..."
 consoleWrite $_statusMessage
 if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
   consoleWriteLine
   _folderSize=`du --summarize --bytes $BASE | cut --fields 1`
-  if ! tar --create --file - $BASE | pv --progress --rate --bytes --size $_folderSize | gzip --best > $FILE; then
+  if ! tar --create $_excludes --file - $BASE | pv --progress --rate --bytes --size $_folderSize | gzip --best > $FILE; then
     consoleWriteLine "Failed!"
     exit 1
   fi
@@ -337,7 +338,7 @@ if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
   # It's unfortunate, but ignored for the time being
   tput cuu 2 && tput cuf ${#_statusMessage} && tput ed
 else
-  if ! tar --create --gzip --file $FILE $BASE; then
+  if ! tar --create $_excludes --gzip --file $FILE $BASE; then
     consoleWriteLine "Failed!"
     exit 1
   fi
