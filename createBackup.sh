@@ -333,7 +333,7 @@ fi
 _excludes=
 for excludePattern in "${EXCLUDE[@]}"; do
   _excludes+="--exclude $BASE/$excludePattern "
-  consoleWriteLineVerbose "Excluding $excludePattern"
+  consoleWriteLineVerbose "Excluding $BASE/$excludePattern"
 done
 
 _statusMessage="Compressing TYPO3 installation..."
