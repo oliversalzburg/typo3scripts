@@ -332,7 +332,7 @@ fi
 # Create backup archive
 _excludes=
 for excludePattern in "${EXCLUDE[@]}"; do
-  _excludes+="--exclude='$BASE/$excludePattern' "
+  _excludes+="--exclude=$BASE/$excludePattern "
   consoleWriteLineVerbose "Excluding '$BASE/$excludePattern'"
 done
 
