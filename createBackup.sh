@@ -28,8 +28,10 @@ function showHelp() {
   Options:
   --skip-db           Skips dumping the database before creating the archive.
   --skip-fs           Skips archiving the TYPO3 directory.
-  --exclude=regex     Will exclude files that match the pattern from the 
+  --exclude=pattern   Will exclude files that match the pattern from the 
                       backup.
+  --no-data=pattern   For MySQL tables that match the pattern, only the table
+                      structure will be exported.
                       
   Database:
   --hostname=HOST     The name of the host where the TYPO3 database is running.
@@ -89,6 +91,8 @@ SKIP_DB=false
 SKIP_FS=false
 # The patterns that describe files that should not be included in the backup
 EXCLUDE=()
+# The patterns that describe for which MySQL tables only the structure should be exported.
+NO_DATA=()
 # Script Configuration end
 
 function consoleWrite() {
@@ -270,6 +274,9 @@ for option in $*; do
     --exclude=*)
       EXCLUDE+=($(echo $option | cut -d'=' -f2))
       ;;
+    --no-data=*)
+      NO_DATA+=($(echo $option | cut -d'=' -f2))
+      ;;
     *)
       echo "Unrecognized option \"$option\""
       exit 1
@@ -320,8 +327,43 @@ consoleWriteLine "Creating TYPO3 backup '$FILE'..."
 # Create database dump
 if [[ "false" == $SKIP_DB ]]; then
   consoleWrite "Creating database dump at '$BASE/database.sql'..."
+  
+  # Get all table names
+  _tablesList=$BASE/database.sql.tables
   set +e errexit
-  _errorMessage=$(mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database $DB 2>&1 > $BASE/database.sql)
+  _errorMessage=$(echo "SHOW TABLES;" | mysql --host=$HOST --user=$USER --password=$PASS $DB 2>&1 > $_tablesList)
+  _status=$?
+  set -e errexit
+  if [[ 0 < $_status ]]; then
+    consoleWriteLine "Failed!"
+    consoleWriteLine "Error: $_errorMessage"
+    # Try to delete temporary file
+    rm $BASE/database.sql.tables 2>&1 > /dev/null
+    exit 1
+  fi
+  
+  _fullTables=()
+  _bareTables=()
+  _ignoreDataTables=
+  _fullDataTables=
+  
+  consoleWriteLineVerbose
+  while read _tableName; do
+    for _noDataPattern in "${NO_DATA[@]}"; do
+      if [[ $_tableName = $_noDataPattern ]]; then
+        _noDataTables+="--ignore-table=$DB.$_tableName "
+        consoleWriteLineVerbose "Excluding '$DB.$_tableName'"
+      else
+        _fullDataTables+="--ignore-table=$DB.$_tableName "
+      fi
+    done
+  done < $_tablesList
+  
+  # Try to delete temporary file
+  rm $BASE/database.sql.tables 2>&1 > /dev/null
+  
+  set +e errexit
+  _errorMessage=$(mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database $_noDataTables $DB 2>&1 > $BASE/database.sql)
   _status=$?
   set -e errexit
   if [[ 0 < $_status ]]; then
@@ -329,7 +371,26 @@ if [[ "false" == $SKIP_DB ]]; then
     consoleWriteLine "Error: $_errorMessage"
     exit 1
   fi
-  consoleWriteLine "Done."
+  
+  if [[ ! "" = $_noDataTables ]]; then
+    # We now export the tables for which we ignore the data.
+    # We do so by ignoring all tables we previously selected for exporting.
+    consoleWriteLine "Done"
+    consoleWrite "Exporting structure for previously ignored tables..."
+    
+    set +e errexit
+    _errorMessage=$(mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database --no-data $_fullDataTables $DB 2>&1 >> $BASE/database.sql)
+    _status=$?
+    set -e errexit
+    if [[ 0 < $_status ]]; then
+      consoleWriteLine "Failed!"
+      consoleWriteLine "Error: $_errorMessage"
+      exit 1
+    fi
+  fi
+  consoleWriteLine "Done"
+  
+  
 else
   consoleWriteLine "Skipping database export."
 fi
@@ -338,9 +399,9 @@ fi
 # Create backup archive
 if [[ "false" == $SKIP_FS ]]; then
   _excludes=
-  for excludePattern in "${EXCLUDE[@]}"; do
-    _excludes+="--exclude=$BASE/$excludePattern "
-    consoleWriteLineVerbose "Excluding '$BASE/$excludePattern'"
+  for _excludePattern in "${EXCLUDE[@]}"; do
+    _excludes+="--exclude=$BASE/$_excludePattern "
+    consoleWriteLineVerbose "Excluding '$BASE/$_excludePattern'"
   done
   
   _statusMessage="Compressing TYPO3 installation..."
@@ -369,7 +430,8 @@ else
 fi
 
 # Now that the database dump is packed up, delete it
-if [[ "false" == $SKIP_DB ]]; then
+# We don't want to delete it if we never even exported it or if we didn't create an archive
+if [[ "false" == $SKIP_DB && "false" == $SKIP_FS ]]; then
   consoleWriteVerbose "Deleting database dump..."
   rm --force -- $BASE/database.sql
 fi
