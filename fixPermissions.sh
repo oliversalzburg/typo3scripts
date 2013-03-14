@@ -28,7 +28,6 @@ function showHelp() {
   Options:
   --owner=OWNER       The name of the user that owns the installation.
   --httpd-group=GROUP The user group the local HTTP daemon is running as.
-  --fix-indexphp      Replaces the index.php symlink with the actual file.
 EOF
 }
 
@@ -70,8 +69,6 @@ BASE=typo3
 OWNER=$(id --user --name)
 # The group the local http daemon is running as (usually www-data or apache)
 HTTPD_GROUP=www-data
-# Should the index.php symlink be replaced by the actual file?
-FIX_INDEXPHP=false
 # Script Configuration end
 
 # Pre-initialize the owner to the user that called sudo (if applicable)
@@ -238,9 +235,6 @@ for option in $*; do
       ;;
     --httpd-group=*)
       HTTPD_GROUP=$(echo $option | cut -d'=' -f2)
-      ;;
-    --fix-indexphp)
-      FIX_INDEXPHP=true
       ;;
     *)
       VERSION=$option
