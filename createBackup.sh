@@ -359,8 +359,10 @@ fi
 consoleWriteLine "Done."
 
 # Now that the database dump is packed up, delete it
-consoleWriteVerbose "Deleting database dump..."
-rm --force -- $BASE/database.sql
+if [[ "false" == $SKIP_DB ]]; then
+  consoleWriteVerbose "Deleting database dump..."
+  rm --force -- $BASE/database.sql
+fi
 consoleWriteLineVerbose "Done!"
 
 # vim:ts=2:sw=2:expandtab:
