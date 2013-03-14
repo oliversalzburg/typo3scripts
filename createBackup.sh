@@ -344,23 +344,25 @@ if [[ "false" == $SKIP_DB ]]; then
   
   _fullTables=()
   _bareTables=()
-  _ignoreDataTables=
+  _noDataTables=
   _fullDataTables=
   
-  consoleWriteLineVerbose
-  while read _tableName; do
-    for _noDataPattern in "${NO_DATA[@]}"; do
-      if [[ $_tableName = $_noDataPattern ]]; then
-        _noDataTables+="--ignore-table=$DB.$_tableName "
-        consoleWriteLineVerbose "Excluding '$DB.$_tableName'"
-      else
-        _fullDataTables+="--ignore-table=$DB.$_tableName "
-      fi
-    done
-  done < $_tablesList
-  
-  # Try to delete temporary file
-  rm $BASE/database.sql.tables 2>&1 > /dev/null
+  if [[ ${#NO_DATA[@]} > 0 ]]; then
+    consoleWriteLineVerbose
+    while read _tableName; do
+      for _noDataPattern in "${NO_DATA[@]}"; do
+        if [[ $_tableName = $_noDataPattern ]]; then
+          _noDataTables+="--ignore-table=$DB.$_tableName "
+          consoleWriteLineVerbose "Excluding '$DB.$_tableName'"
+        else
+          _fullDataTables+="--ignore-table=$DB.$_tableName "
+        fi
+      done
+    done < $_tablesList
+    
+    # Try to delete temporary file
+    rm $BASE/database.sql.tables 2>&1 > /dev/null
+  fi
   
   set +e errexit
   _errorMessage=$(mysqldump --host=$HOST --user=$USER --password=$PASS --add-drop-table --add-drop-database $_noDataTables $DB 2>&1 > $BASE/database.sql)
@@ -390,7 +392,6 @@ if [[ "false" == $SKIP_DB ]]; then
   fi
   consoleWriteLine "Done"
   
-  
 else
   consoleWriteLine "Skipping database export."
 fi
@@ -398,11 +399,14 @@ fi
 
 # Create backup archive
 if [[ "false" == $SKIP_FS ]]; then
+  
   _excludes=
-  for _excludePattern in "${EXCLUDE[@]}"; do
-    _excludes+="--exclude=$BASE/$_excludePattern "
-    consoleWriteLineVerbose "Excluding '$BASE/$_excludePattern'"
-  done
+  if [[ ${#EXCLUDE[@]} > 0 ]]; then
+    for _excludePattern in "${EXCLUDE[@]}"; do
+      _excludes+="--exclude=$BASE/$_excludePattern "
+      consoleWriteLineVerbose "Excluding '$BASE/$_excludePattern'"
+    done
+  fi
   
   _statusMessage="Compressing TYPO3 installation..."
   consoleWrite $_statusMessage
