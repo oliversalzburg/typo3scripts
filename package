@@ -5,5 +5,5 @@ echo -n "Generating $PACKAGE..."
 if [ -w $PACKAGE ]; then
 	rm -f $PACKAGE
 fi
-tar czf $PACKAGE *.sh
+tar czf $PACKAGE *.sh *.php
 echo "Done."

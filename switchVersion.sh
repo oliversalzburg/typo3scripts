@@ -89,7 +89,7 @@ function consoleWriteLineVerbose() {
 }
 
 # The base location from where to retrieve new versions of this script
-UPDATE_BASE=http://typo3scripts.googlecode.com/svn/trunk
+UPDATE_BASE=https://raw.github.com/oliversalzburg/typo3scripts/master
 
 # Update check
 function updateCheck() {
@@ -106,7 +106,7 @@ function updateCheck() {
   
   if [[ "" == $SUM_LATEST ]]; then
     consoleWriteLine "No update information is available for '$SELF'"
-    consoleWriteLine "Please check the project home page 'http://code.google.com/p/typo3scripts/'."
+    consoleWriteLine "Please check the project home page 'https://github.com/oliversalzburg/typo3scripts'."
     return 2
     
   elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
