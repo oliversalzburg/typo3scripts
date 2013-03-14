@@ -35,6 +35,7 @@ function showHelp() {
   --owner=OWNER       The name of the user that owns the installation.
   --httpd-group=GROUP The user group the local HTTP daemon is running as.
   --fix-indexphp      Replaces the index.php symlink with the actual file.
+  --store=PATH        Where your TYPO3 packages are stored.
 
   Database:
   --hostname=HOST     The name of the host where the TYPO3 database is running.
@@ -107,6 +108,8 @@ OWNER=$(id --user --name)
 HTTPD_GROUP=www-data
 # Should the index.php symlink be replaced by the actual file?
 FIX_INDEXPHP=false
+# Where the TYPO3 packages are stored
+STORE=.
 # Script Configuration end
 
 # Pre-initialize password to random 16-character string if possible
@@ -300,6 +303,9 @@ for option in $*; do
     --fix-indexphp)
       FIX_INDEXPHP=true
       ;;
+    --store=*)
+      STORE=$(echo $option | cut -d'=' -f2)
+      ;;
     --base=*)
       BASE=$(echo $option | cut -d'=' -f2)
       ;;
@@ -352,6 +358,14 @@ if [[ $VERSION == --* ]]; then
   exit 1
 fi
 
+# Check if package store exists
+if [[ ! -d $STORE ]]; then
+  consoleWriteLine "The given TYPO3 package store '$STORE' does not exist."
+  exit 1
+else
+  consoleWriteLine "Using TYPO3 package store '$STORE'."
+fi
+
 # Check for existing installations
 if [[ -d "$BASE" && "false" == $FORCE ]]; then
   consoleWriteLine "A directory named $BASE already exists. $SELF will not overwrite existing content."
@@ -386,29 +400,30 @@ VERSION_NAME=blankpackage-$VERSION
 VERSION_FILENAME=$VERSION_NAME.tar.gz
 # The location where the package can be downloaded
 TYPO3_DOWNLOAD_URL=http://prdownloads.sourceforge.net/typo3/$VERSION_FILENAME
+VERSION_FILE=$STORE/$VERSION_FILENAME
 
-consoleWriteVerbose "Looking for TYPO3 package at '$VERSION_FILENAME'..."
-if [[ ! -e "$VERSION_FILENAME" || "true" == $FORCE ]]; then
+consoleWriteVerbose "Looking for TYPO3 package at '$VERSION_FILE'..."
+if [[ ! -e "$VERSION_FILE" || "true" == $FORCE ]]; then
   if [[ ! "true" == $FORCE ]]; then
     consoleWriteLineVerbose "NOT found!"
   else
     consoleWriteLineVerbose "ignored!"
   fi
   consoleWrite "Downloading $TYPO3_DOWNLOAD_URL..."
-  wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILENAME
+  wget --quiet $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE
 else
   consoleWriteLineVerbose "Found!"
   consoleWrite "Trying to resume download from '$TYPO3_DOWNLOAD_URL'..."
-  if ! wget --quiet --continue $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILENAME; then
+  if ! wget --quiet --continue $TYPO3_DOWNLOAD_URL --output-document=$VERSION_FILE; then
     consoleWriteLine "Failed!"
-    consoleWriteLine "Possibly, the download could not be resumed. Either call $SELF with --force or delete the partially downloaded '$VERSION_FILENAME' manually."
+    consoleWriteLine "Possibly, the download could not be resumed. Either call $SELF with --force or delete the partially downloaded '$VERSION_FILE' manually."
     exit 1
   fi
 fi
 consoleWriteLine "Done."
 
-consoleWrite "Extracting TYPO3 package '$VERSION_FILENAME'..."
-if ! tar --extract --gzip --file $VERSION_FILENAME; then
+consoleWrite "Extracting TYPO3 package '$VERSION_FILE'..."
+if ! tar --extract --gzip --file $VERSION_FILE; then
   consoleWriteLine "Failed!"
   exit 1
 fi

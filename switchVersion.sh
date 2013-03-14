@@ -27,7 +27,7 @@ function showHelp() {
   
   Options:
   --version=VERSION   The version to switch to.
-  --store=PATH        Where your TYPO3 packages are stored
+  --store=PATH        Where your TYPO3 packages are stored.
 EOF
 }
 
