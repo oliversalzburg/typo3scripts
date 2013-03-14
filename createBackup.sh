@@ -27,6 +27,7 @@ function showHelp() {
   
   Options:
   --skip-db           Skips dumping the database before creating the archive.
+  --skip-fs           Skips archiving the TYPO3 directory.
   --exclude=regex     Will exclude files that match the pattern from the 
                       backup.
                       
@@ -84,6 +85,8 @@ PASS=*password*
 DB=typo3
 # Skip dumping the database before archiving
 SKIP_DB=false
+# Skips archiving the TYPO3 base directory.
+SKIP_FS=false
 # The patterns that describe files that should not be included in the backup
 EXCLUDE=()
 # Script Configuration end
@@ -261,6 +264,9 @@ for option in $*; do
     --skip-db)
       SKIP_DB=true
       ;;
+    --skip-fs)
+      SKIP_FS=true
+      ;;
     --exclude=*)
       EXCLUDE+=($(echo $option | cut -d'=' -f2))
       ;;
@@ -325,38 +331,42 @@ if [[ "false" == $SKIP_DB ]]; then
   fi
   consoleWriteLine "Done."
 else
-  consoleWriteLine Skipping database export.
+  consoleWriteLine "Skipping database export."
 fi
 
 
 # Create backup archive
-_excludes=
-for excludePattern in "${EXCLUDE[@]}"; do
-  _excludes+="--exclude=$BASE/$excludePattern "
-  consoleWriteLineVerbose "Excluding '$BASE/$excludePattern'"
-done
-
-_statusMessage="Compressing TYPO3 installation..."
-consoleWrite $_statusMessage
-if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
-  consoleWriteLine
-  _folderSize=`du --summarize --bytes $BASE | cut --fields 1`
-  if ! tar --create $_excludes --file - $BASE | pv --progress --rate --bytes --size $_folderSize | gzip --best > $FILE; then
-    consoleWriteLine "Failed!"
-    exit 1
+if [[ "false" == $SKIP_FS ]]; then
+  _excludes=
+  for excludePattern in "${EXCLUDE[@]}"; do
+    _excludes+="--exclude=$BASE/$excludePattern "
+    consoleWriteLineVerbose "Excluding '$BASE/$excludePattern'"
+  done
+  
+  _statusMessage="Compressing TYPO3 installation..."
+  consoleWrite $_statusMessage
+  if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
+    consoleWriteLine
+    _folderSize=`du --summarize --bytes $BASE | cut --fields 1`
+    if ! tar --create $_excludes --file - $BASE | pv --progress --rate --bytes --size $_folderSize | gzip --best > $FILE; then
+      consoleWriteLine "Failed!"
+      exit 1
+    fi
+    # Clear pv output and position cursor after status message
+    # If stderr was redirected from the console, this messes up the prompt.
+    # It's unfortunate, but ignored for the time being
+    tput cuu 2 && tput cuf ${#_statusMessage} && tput ed
+  else
+    if ! tar --create $_excludes --gzip --file $FILE $BASE; then
+      consoleWriteLine "Failed!"
+      exit 1
+    fi
   fi
-  # Clear pv output and position cursor after status message
-  # If stderr was redirected from the console, this messes up the prompt.
-  # It's unfortunate, but ignored for the time being
-  tput cuu 2 && tput cuf ${#_statusMessage} && tput ed
+  
+  consoleWriteLine "Done."
 else
-  if ! tar --create $_excludes --gzip --file $FILE $BASE; then
-    consoleWriteLine "Failed!"
-    exit 1
-  fi
+  consoleWriteLine "Skipping creating filesystem archive."
 fi
-
-consoleWriteLine "Done."
 
 # Now that the database dump is packed up, delete it
 if [[ "false" == $SKIP_DB ]]; then
