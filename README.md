@@ -74,7 +74,7 @@ This is the output of a run of `restoreBackup.sh` restoring a backup snapshot pr
 	Importing database dump...Done.
 
 ### Upgrading a TYPO3 installation with switchVersion.sh
-This is the output of a run of `switchVersion.sh` switching (in this case upgrading) a TYPO3 installation to version 4.6.3.
+This is the output of a run of `switchVersion.sh` switching (in this case upgrading) a TYPO3 installation to version 4.7.8.
 
     /var/www/t3site$ ./switchVersion.sh 4.7.8
 	Checking dependencies...Succeeded.
