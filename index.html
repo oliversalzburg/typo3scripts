@@ -31,32 +31,128 @@
     <!-- MAIN CONTENT -->
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
-        <h3>Welcome to GitHub Pages.</h3>
+        <p>This is a collection of shell scripts that aid in TYPO3 deployment and maintenance.</p>
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+<p>The scripts in this project and their primary intended purpose are outlined as such:</p>
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
+<ul>
+<li>
+<a href="https://github.com/oliversalzburg/typo3scripts/wiki/BootstrapSh">bootstrap.sh</a><br>
+Starting a new TYPO3 installation (no relation to Twitter Bootstrap).</li>
+<li>
+<a href="https://github.com/oliversalzburg/typo3scripts/wiki/CreateBackupSh">createBackup.sh</a><br>
+Creates a snapshot of a TYPO3 installation.</li>
+<li>
+<a href="https://github.com/oliversalzburg/typo3scripts/wiki/RestoreBackupSh">restoreBackup.sh</a><br>
+Restores aforementioned snapshots.</li>
+<li>
+<a href="https://github.com/oliversalzburg/typo3scripts/wiki/SwitchVersionSh">switchVersion.sh</a><br>
+Switches between multiple versions of the TYPO3 core package.</li>
+<li>
+<a href="https://github.com/oliversalzburg/typo3scripts/wiki/FixPermissionsSh">fixPermissions.sh</a><br>
+Fixes access permissions on the files of a TYPO3 installation.</li>
+<li>
+<a href="https://github.com/oliversalzburg/typo3scripts/wiki/ExtChangelogSh">extChangelog.sh</a><br>
+Retrieve the upload comment history for an extension.</li>
+<li>
+<a href="https://github.com/oliversalzburg/typo3scripts/wiki/ExtUpdateSh">extUpdate.sh</a><br>
+Retrieve update information for an extension (or all extensions) directly from the shell.</li>
+<li>
+<a href="https://github.com/oliversalzburg/typo3scripts/wiki/ExtExtractPhp">extExtract.php</a><br>
+Extract and save or display the contents of a <code>.t3x</code> file.</li>
+</ul><h2>Downloads</h2>
+
+<p>After moving to GitHub, we no longer provide any pre-packaged downloads. If you want to retrieve the scripts without the use of git, please use the the <a href="archive/master.zip">download as ZIP</a> feature. </p>
+
+<p>The recommended way of obtaining a needed script is directly from the source repository like so:</p>
+
+<pre><code>$ wget https://raw.github.com/oliversalzburg/typo3scripts/master/bootstrap.sh
 </code></pre>
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+<p>You can obtain the latest development version of a script the same way:</p>
 
-<h3>Designer Templates</h3>
+<pre><code>$ wget https://raw.github.com/oliversalzburg/typo3scripts/dev/bootstrap.sh
+</code></pre>
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+<p>Optionally, you can clone the whole project:</p>
 
-<h3>Rather Drive Stick?</h3>
+<pre><code>$ git clone git://github.com/oliversalzburg/typo3scripts.git /var/www/my-typo3-site/
+</code></pre>
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+<h2>Usage Examples</h2>
 
-<h3>Authors and Contributors</h3>
+<p>These usage examples should give a quick overview of the main, intended purpose of the provided scripts. For additional applications of these scripts, please see their dedicated wiki pages (as available).</p>
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+<h3>Creating a new TYPO3 installation with bootstrap.sh</h3>
 
-<h3>Support or Contact</h3>
+<p>This is the output of a run of <code>bootstrap.sh</code> creating a fresh installation of TYPO3.</p>
 
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
+<pre><code>/var/www/t3site$ ./bootstrap.sh 4.6.1
+Looking for TYPO3 package at blankpackage-4.6.1.tar.gz...Found!
+Trying to resume download from http://prdownloads.sourceforge.net/typo3/blankpackage-4.6.1.tar.gz...Done.
+Extracting TYPO3 package blankpackage-4.6.1.tar.gz...Done.
+Moving TYPO3 package to typo3...Done.
+Generating localconf.php...Done.
+</code></pre>
+
+<h3>Creating a backup of a TYPO3 installation with createBackup.sh</h3>
+
+<p>This is the output of a run of <code>createBackup.sh</code> creating a backup of a TYPO3 installation.</p>
+
+<pre><code>/var/www/t3site$ ./createBackup.sh
+Sourcing script configuration from createBackup.conf...Done.
+Creating TYPO3 backup 'typo3-2011-12-20-12-06.tgz'...
+Creating database dump at typo3/database.sql...Done.
+Compressing TYPO3 installation...Done.
+Deleting database dump...Done!
+</code></pre>
+
+<h3>Restoring a backup with restoreBackup.sh</h3>
+
+<p>This is the output of a run of <code>restoreBackup.sh</code> restoring a backup snapshot previously created by a run of <code>createBackup.sh</code>.</p>
+
+<pre><code>/var/www/t3site$ ./restoreBackup.sh typo3-2011-12-22-13-44.tgz
+Sourcing script configuration from restoreBackup.conf...Done.
+Erasing current TYPO3 installation 'typo3'...Done.
+Extracting TYPO3 backup 'typo3-2011-12-22-13-44.tgz'...Done.
+Importing database dump...Done.
+Deleting database dump...Done!
+</code></pre>
+
+<h3>Upgrading a TYPO3 installation with switchVersion.sh</h3>
+
+<p>This is the output of a run of <code>switchVersion.sh</code> switching (in this case upgrading) a TYPO3 installation to version 4.6.3.</p>
+
+<pre><code>/var/www/t3site$ ./switchVersion.sh 4.6.3
+Sourcing script configuration from switchVersion.conf...Done.
+Looking for TYPO3 source package at typo3/typo3_src-4.6.3/...NOT found! Downloading.
+Downloading http://prdownloads.sourceforge.net/typo3/typo3_src-4.6.3.tar.gz...Done.
+Extracting source package typo3/typo3_src-4.6.3.tar.gz...Done.
+Switching TYPO3 source symlink to typo3/typo3_src-4.6.3/...Done.
+Deleting temp_CACHED_* files from typo3conf...Done!
+Version switched to 4.6.3.
+</code></pre>
+
+<h3>Cloning a TYPO3 installation using createBackup.sh and restoreBackup.sh</h3>
+
+<p>In the latest development builds, you're able to restore a backup made on a different installation, thus, replicating the original installation.</p>
+
+<pre><code>/var/www/t3site$ sudo ./createBackup.sh
+Checking dependencies...Succeeded.
+Creating TYPO3 backup 'typo3-2012-11-28-16-32.tgz'...
+Creating database dump at 'typo3/database.sql'...Done.
+Compressing TYPO3 installation...Done.
+/var/www/t3site$ cp typo3-2012-11-28-16-32.tgz ../t3site-test/
+/var/www/t3site$ cd ../t3site-test/
+/var/www/t3site-test$ sudo ./restoreBackup.sh typo3-2012-11-28-16-32.tgz
+Checking dependencies...Succeeded.
+Testing write permissions in typo3...Succeeded
+Erasing current TYPO3 installation 'typo3'...Done.
+Extracting TYPO3 backup 'typo3-2012-11-28-16-32.tgz'...Done.
+Importing database dump...Done.
+</code></pre>
+
+<p>You may have to utilize <a href="wiki/FixPermissionsSh">fixPermissions.sh</a> afterwards to adjust permissions for your webserver user. You'll also have to adjust your database settings and domain records in the cloned TYPO3 instance afterwards.</p>
       </section>
     </div>
 
