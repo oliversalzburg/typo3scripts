@@ -532,9 +532,19 @@ if ! $SKIP_RIGHTS; then
     consoleWriteLineVerbose "Changing owner of '$BASE' to '$OWNER'..."
     sudo chown --recursive $OWNER $BASE
     consoleWriteLineVerbose "Changing group of core TYPO3 folders to '$HTTPD_GROUP'..."
-    sudo chgrp --recursive $HTTPD_GROUP $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads $BASE/typo3/ext
+    sudo chgrp --recursive $HTTPD_GROUP $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
     consoleWriteLineVerbose "Changing access rights of core TYPO3 folders..."
-    sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads $BASE/typo3/ext
+    sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads
+    # Fix access to internal TYPO3 extension folder. Using this folder is deprecated, but missing to change
+    # these permissions can cause ugly warnings. This folder may not exist.
+    if [[ -d $BASE/typo3/ext ]]; then
+      consoleWriteLineVerbose "Changing group of typo3/ext to '$HTTPD_GROUP'..."
+      sudo chgrp --recursive $HTTPD_GROUP $BASE/typo3/ext
+      consoleWriteLineVerbose "Changing access rights of typo3/ext..."
+      sudo chmod --recursive g+rwX,o-w $BASE/typo3/ext
+    else
+      consoleWriteLine "Folder 'typo3/ext' was not adjusted as it does not exist."
+    fi
   fi
   consoleWriteLine "Done."
 fi
