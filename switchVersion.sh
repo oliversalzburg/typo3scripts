@@ -311,7 +311,7 @@ else
   consoleWriteLine "Done."
 
   consoleWrite "Extracting source package $VERSION_FILE..."
-  if ! tar --extract --gzip --directory $BASE --file $VERSION_FILE; then
+  if ! tar --extract --gzip --directory $STORE --file $VERSION_FILE; then
     consoleWriteLine "Failed!"
     exit 1
   fi
