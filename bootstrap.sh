@@ -27,6 +27,8 @@ function showHelp() {
 
   Options:
   --version=VERSION   The version to install.
+  --dummy             Downloads/installs the dummy package.
+  --package=package   Which package to downloa/install.
   --skip-config       Skips writing any configuration data/file.
   --skip-db-config    Skips writing the database configuration to localconf.php
   --skip-gm-detect    Skips the detection of GraphicsMagick.
@@ -110,6 +112,8 @@ HTTPD_GROUP=www-data
 FIX_INDEXPHP=false
 # Where the TYPO3 packages are stored
 STORE=.
+# Which package to install
+PACKAGE=blankpackage
 # Script Configuration end
 
 # Pre-initialize password to random 16-character string if possible
@@ -279,6 +283,12 @@ for option in $*; do
     --version=*)
       VERSION=$(echo $option | cut -d'=' -f2)
       ;;
+    --dummy)
+      PACKAGE=dummy
+      ;;
+    --package=*)
+      PACKAGE=$(echo $option | cut -d'=' -f2)
+      ;;
     --skip-config)
       SKIP_CONFIG=true
       ;;
@@ -395,7 +405,7 @@ if [[ $VERSION == 6.* ]]; then
 fi
 
 # The name of the package
-VERSION_NAME=blankpackage-$VERSION
+VERSION_NAME=$PACKAGE-$VERSION
 # The name of the file that contains the package
 VERSION_FILENAME=$VERSION_NAME.tar.gz
 # The location where the package can be downloaded
