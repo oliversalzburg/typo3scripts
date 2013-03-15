@@ -27,8 +27,7 @@ function showHelp() {
 
   Options:
   --version=VERSION   The version to install.
-  --dummy             Downloads/installs the dummy package.
-  --package=package   Which package to downloa/install.
+  --package=package   Which package to download/install.
   --skip-config       Skips writing any configuration data/file.
   --skip-db-config    Skips writing the database configuration to localconf.php
   --skip-gm-detect    Skips the detection of GraphicsMagick.
@@ -282,9 +281,6 @@ for option in $*; do
       ;;
     --version=*)
       VERSION=$(echo $option | cut -d'=' -f2)
-      ;;
-    --dummy)
-      PACKAGE=dummy
       ;;
     --package=*)
       PACKAGE=$(echo $option | cut -d'=' -f2)
