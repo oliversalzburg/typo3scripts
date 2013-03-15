@@ -264,6 +264,12 @@ if [[ $VERSION == --* ]]; then
   exit 1
 fi
 
+# Does the base directory exist?
+if [[ ! -d $BASE ]]; then
+  consoleWriteLine "The base directory '$BASE' does not seem to exist!"
+  exit 1
+fi
+
 # Check if package store exists
 if [[ ! -d $STORE ]]; then
   consoleWriteLine "The given TYPO3 package store '$STORE' does not exist."
