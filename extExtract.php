@@ -105,6 +105,23 @@ $EXTRACT="true";
 $FORCE_VERSION="";
 # Script Configuration end
 
+function consoleWrite( $args ) {
+  if( "false" == "$QUIET" ) file_put_contents( "php://stderr", $args );
+  return 0;
+}
+function consoleWriteLine( $args ) {
+  if( "false" == "$QUIET" ) file_put_contents( "php://stderr", $args . "\n" );
+  return 0;
+}
+function consoleWriteVerbose( $args ) {
+  if( $VERBOSE ) consoleWrite( $args );
+  return 0;
+}
+function consoleWriteLineVerbose( $args ) {
+  if( $VERBOSE ) consoleWriteLine( $args );
+  return 0;
+}
+
 // The base location from where to retrieve new versions of this script
 $UPDATE_BASE = "https://raw.github.com/oliversalzburg/typo3scripts/master";
 
