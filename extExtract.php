@@ -38,7 +38,7 @@ function showHelp( $name ) {
                           were invoked.
   --output-dir=DIRECTORY  The DIRECTORY to where the extension should be
                           extracted.
-  --output-file[=NAME]    Write the downloaded extension file to disk with and
+  --output-file[=NAME]    Write the downloaded extension file to disk with an
                           optional NAME.
 
 EOS;
