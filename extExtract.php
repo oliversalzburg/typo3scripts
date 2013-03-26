@@ -67,8 +67,8 @@ function extractConfig() {
 
 define( "REQUIRED_ARGUMENT_COUNT", 1 );
 if( $argc <= REQUIRED_ARGUMENT_COUNT ) {
-  file_put_contents( "php://stderr", "Insufficient command line arguments!\n" );
-  file_put_contents( "php://stderr", "Use " . INVNAME . " --help to get additional information.\n" );
+  consoleWriteLine( "Insufficient command line arguments!" );
+  consoleWriteLine( "Use " . INVNAME . " --help to get additional information." );
   exit( 1 );
 }
 
@@ -133,17 +133,17 @@ function updateCheck() {
   $_contentSelf     = split( "\n", file_get_contents( INVNAME ), 2 );
   $_sumSelf         = md5( $_contentSelf[ 1 ] );
   
-  if( $VERBOSE ) file_put_contents( "php://stderr", "Remote hash source: '" . $UPDATE_BASE . "/versions'\n" );
-  if( $VERBOSE ) file_put_contents( "php://stderr", "Own hash: '" . $SUM_SELF . "' Remote hash: '" . $SUM_LATEST . "'\n" );
+  consoleWriteLineVerbose( "Remote hash source: '" . $UPDATE_BASE . "/versions'" );
+  consoleWriteLineVerbose( "Own hash: '" . $SUM_SELF . "' Remote hash: '" . $SUM_LATEST . "'" );
   
   $_isListed = preg_match( "/^" . SELF . " (?P<sum>[0-9a-zA-Z]{32})/ms", $_contentVersions, $_sumLatest );
   if( !$_isListed ) {
-    file_put_contents( "php://stderr", "No update information is available for '" . SELF . "'.\n" );
-    file_put_contents( "php://stderr", "Please check the project home page https://github.com/oliversalzburg/typo3scripts.\n" );
+    consoleWriteLine( "No update information is available for '" . SELF . "'." );
+    consoleWriteLine( "Please check the project home page https://github.com/oliversalzburg/typo3scripts." );
     return 2;
     
   } else if( $_sumSelf != $_sumLatest[ 1 ] ) {
-    file_put_contents( "php://stderr", "NOTE: New version available!\n" );
+    consoleWriteLine( "NOTE: New version available!" );
     return 1;
   }
   return 0;
@@ -226,28 +226,28 @@ foreach( $argv as $_option ) {
 $BASE_CONFIG_FILENAME = "typo3scripts.conf";
 if( file_exists( $BASE_CONFIG_FILENAME ) ) {
   if( is_readable( $BASE_CONFIG_FILENAME ) ) {
-    file_put_contents( "php://stderr", "Unable to read '" . $BASE_CONFIG_FILENAME . "'. Check permissions." );
+    consoleWriteLine( "Unable to read '" . $BASE_CONFIG_FILENAME . "'. Check permissions." );
     exit( 1 );
   }
-  if( $VERBOSE ) file_put_contents( "php://stderr", "Sourcing script configuration from " . $BASE_CONFIG_FILENAME . "..." );
+  consoleWriteVerbose( "Sourcing script configuration from " . $BASE_CONFIG_FILENAME . "..." );
   $_baseConfig = file_get_contents( $BASE_CONFIG_FILENAME );
   $_baseConfigFixed = preg_replace( "/^(?!\s*$)(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_baseConfig );
   eval( $_baseConfigFixed );
-  if( $VERBOSE ) file_put_contents( "php://stderr", "Done.\n" );
+  consoleWriteLineVerbose( "Done." );
 }
 
 // Read external configuration - Stage 2 - script-specific (overwrites default, hard-coded configuration)
 $CONFIG_FILENAME = substr( SELF, 0, -4 ) . ".conf";
 if( file_exists( $CONFIG_FILENAME ) ) {
   if( is_readable( $CONFIG_FILENAME ) ) {
-    file_put_contents( "php://stderr", "Unable to read '" . $CONFIG_FILENAME . "'. Check permissions." );
+    consoleWriteLine( "Unable to read '" . $CONFIG_FILENAME . "'. Check permissions." );
     exit( 1 );
   }
-  if( $VERBOSE ) file_put_contents( "php://stderr", "Sourcing script configuration from " . $CONFIG_FILENAME . "..." );
+  consoleWriteVerbose( "Sourcing script configuration from " . $CONFIG_FILENAME . "..." );
   $_config = file_get_contents( $CONFIG_FILENAME );
   $_configFixed = preg_replace( "/^(?!\s*$)(?P<name>[^#][^=]+)\s*=\s*(?P<value>[^$]*?)$/ms", "$\\1=\"\\2\";", $_config );
   eval( $_configFixed );
-  if( $VERBOSE ) file_put_contents( "php://stderr", "Done.\n" );
+  consoleWriteLineVerbose( "Done." );
 }
 
 foreach( $argv as $_option ) {
@@ -317,13 +317,13 @@ foreach( $argv as $_option ) {
 
 // Check default argument validity
 if( 0 === strpos( $EXTENSION, "--" ) ) {
-  file_put_contents( "php://stderr", "The given extension key '$EXTENSION' looks like a command line parameter.\n" );
-  file_put_contents( "php://stderr", "Please use --help to see a list of available command line parameters.\n" );
+  consoleWriteLine( "The given extension key '$EXTENSION' looks like a command line parameter." );
+  consoleWriteLine( "Please use --help to see a list of available command line parameters." );
   exit( 1 );
 }
 
 if( "" === $EXTENSION ) {
-  file_put_contents( "php://stderr", "No extension given.\n" );
+  consoleWriteLine( "No extension given." );
   exit( 1 );
 }
 
@@ -338,8 +338,8 @@ function downloadExtension( $_extKey, $_version ) {
   
   $_extensionData = @file_get_contents( $_extensionUrl );
   if( FALSE === $_extensionData ) {
-    file_put_contents( "php://stderr", "Error: Could not retrieve extension file.\n" );
-    file_put_contents( "php://stderr", "File requested: $_extensionUrl\n" );
+    consoleWriteLine( "Error: Could not retrieve extension file." );
+    consoleWriteLine( "File requested: $_extensionUrl" );
     exit( 1 );
   }
   
@@ -369,7 +369,7 @@ if( !file_exists( $_extensionFile ) ) {
   // But we only need to check it if the user doesn't want a specific version.
   if( is_dir( $_extensionDirectory ) && "" == $FORCE_VERSION ) {
     // The user wants to get the latest, official extension file for an installed extension
-    file_put_contents( "php://stderr", "Retrieving original extension file for '$EXTENSION' " );
+    consoleWrite( "Retrieving original extension file for '$EXTENSION' " );
     $_extensionConfigFile = "$_extensionDirectory/ext_emconf.php";
     
     // While it's not very nice to polute our script with the contents of ext_emconf.php,
@@ -379,29 +379,29 @@ if( !file_exists( $_extensionFile ) ) {
     $_extensionConfiguration = $EM_CONF[ $EXTENSION ];
     
     $_installedVersion = $_extensionConfiguration[ "version" ];
-    file_put_contents( "php://stderr", "$_installedVersion..." );
+    consoleWrite( "$_installedVersion..." );
     
     $_tempFileName = downloadExtension( $EXTENSION, $_installedVersion );
     
-    file_put_contents( "php://stderr", "Done.\n" );
+    consoleWriteLine( "Done." );
     
     $_extensionFile = $_tempFileName;
     
   } else if( "" != $FORCE_VERSION ) {
     // The user is looking for a specific version of an extension. Retrieve it.
-    file_put_contents( "php://stderr", "Retrieving original extension file for '$EXTENSION' " );
+    consoleWrite( "Retrieving original extension file for '$EXTENSION' " );
     
-    file_put_contents( "php://stderr", "$FORCE_VERSION..." );
+    consoleWrite( "$FORCE_VERSION..." );
     
     $_tempFileName = downloadExtension( $EXTENSION, $FORCE_VERSION );
     
-    file_put_contents( "php://stderr", "Done.\n" );
+    consoleWriteLine( "Done." );
     
     $_extensionFile = $_tempFileName;
     
   } else {
-    file_put_contents( "php://stderr", "Unable to find extension '$EXTENSION'.\n" );
-    file_put_contents( "php://stderr", "Directory requested: '$BASE/typo3conf/ext/$EXTENSION'\n" );
+    consoleWriteLine( "Unable to find extension '$EXTENSION'." );
+    consoleWriteLine( "Directory requested: '$BASE/typo3conf/ext/$EXTENSION'" );
     exit( 1 );
   }
 }
@@ -413,7 +413,7 @@ if( 0 === strlen( $OUTPUTDIR ) ) {
 
 // Don't overwrite existing data!
 if( is_dir( $OUTPUTDIR ) ) {
-  file_put_contents( "php://stderr", "Error: The target directory '$OUTPUTDIR' already exists.\n" );
+  consoleWriteLine( "Error: The target directory '$OUTPUTDIR' already exists." );
   exit( 1 );
 }
 
@@ -430,7 +430,7 @@ function extractExtensionData( $extensionFile ) {
         $_extensionContent = gzuncompress( $_fileParts[ 2 ] );
   
       } else {
-        file_put_contents( "php://stderr", "Error: Unable to decode extension. gzuncompress() is unavailable.\n" );
+        consoleWriteLine( "Error: Unable to decode extension. gzuncompress() is unavailable." );
         exit( 1 );
       }
     }
@@ -441,16 +441,16 @@ function extractExtensionData( $extensionFile ) {
         return $_extension;
         
       } else {
-        file_put_contents( "php://stderr", "Error: Unable to unserialize extension! (Shouldn't happen)\n" );
+        consoleWriteLine( "Error: Unable to unserialize extension! (Shouldn't happen)" );
         exit( 1 );
       }
     } else {
-      file_put_contents( "php://stderr", "Error: MD5 mismatch. Extension file may be corrupt!\n" );
+      consoleWriteLine( "Error: MD5 mismatch. Extension file may be corrupt!" );
       exit( 1 );
     }
   
   } else {
-    file_put_contents( "php://stderr", "Error: Unable to open '$_extensionFile'!\n" );
+    consoleWriteLine( "Error: Unable to open '$_extensionFile'!" );
     exit( 1 );
   }
 }
@@ -493,7 +493,7 @@ function printArray( $array, $indent, $nameIndent ) {
   }
 }
 
-file_put_contents( "php://stderr", "Extracting file '$_extensionFile'..." );
+consoleWrite( "Extracting file '$_extensionFile'..." );
 $_extension = extractExtensionData( $_extensionFile );
 
 // Dump data structure first (if requested).
@@ -513,20 +513,20 @@ if( $EXTRACT === "true" ) {
     // is_dir() and mkdir() seem highly unreliable in their return values,
     // so we must ignore failures on mkdir() and have to catch issues later.
     if( FALSE === is_dir( $_fullPathName ) ) {
-      if( $VERBOSE ) file_put_contents( "php://stderr", "Creating directory '$_fullPathName'.\n" );
+      consoleWriteLineVerbose( "Creating directory '$_fullPathName'." );
       @mkdir( $_fullPathName, 0700, true );
     }
     
     $_fullFileName = $OUTPUTDIR . "/" . $_file[ "name" ];
-    if( $VERBOSE ) file_put_contents( "php://stderr", "Writing file '$_fullFileName'.\n" );
+    consoleWriteLineVerbose( "Writing file '$_fullFileName'." );
     if( FALSE === file_put_contents( $_fullFileName, $_file[ "content" ] ) ) {
-      file_put_contents( "php://stderr", "Error: Failed to write file '$_fullFileName'.\n" );
+      consoleWriteLine( "Error: Failed to write file '$_fullFileName'." );
     }
   }
-  file_put_contents( "php://stderr", "Done.\n" );
+  consoleWriteLine( "Done." );
   
 } else {
-  file_put_contents( "php://stderr", "Skipped.\n" );
+  consoleWriteLine( "Skipped." );
 }
 
 # vim:ts=2:sw=2:expandtab:
