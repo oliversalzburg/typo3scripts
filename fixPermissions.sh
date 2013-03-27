@@ -230,6 +230,9 @@ for option in $*; do
     --version=*)
       VERSION=$(echo $option | cut -d'=' -f2)
       ;;
+    --base=*)
+      BASE=$(echo $option | cut -d'=' -f2)
+      ;;
     --owner=*)
       OWNER=$(echo $option | cut -d'=' -f2)
       ;;
