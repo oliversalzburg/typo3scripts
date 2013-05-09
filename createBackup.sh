@@ -319,8 +319,18 @@ if [[ ! -r $BASE ]]; then
   exit 1
 fi
 
+# Adding parameters to the filename
+PARAMS=""
+if [[ "true" == $SKIP_DB ]]; then
+  PARAMS+="-no-DB"
+fi
+
+if [[ "true" == $SKIP_FS ]]; then
+  PARAMS+="-no-FS"
+fi
+
 # Filename for snapshot
-FILE=$BASE-$(date +%Y-%m-%d-%H-%M).tgz
+FILE=$BASE-$(date +%Y-%m-%d-%H-%M)$PARAMS.tgz
 
 consoleWriteLine "Creating TYPO3 backup '$FILE'..."
 
@@ -430,12 +440,33 @@ if [[ "false" == $SKIP_FS ]]; then
   
   consoleWriteLine "Done."
 else
-  consoleWriteLine "Skipping creating filesystem archive."
+
+  _statusMessage="Compressing TYPO3 database..."
+  consoleWrite $_statusMessage
+  if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
+    consoleWriteLine
+    _databaseSize=`du --summarize --bytes $BASE/database.sql | cut --fields 1`
+    if ! tar --create --file - $BASE/database.sql | pv --progress --rate --bytes --size $_databaseSize | gzip --best > $FILE; then
+      consoleWriteLine "Failed!"
+      exit 1
+    fi
+    # Clear pv output and position cursor after status message
+    # If stderr was redirected from the console, this messes up the prompt.
+    # It's unfortunate, but ignored for the time being
+    tput cuu 2 && tput cuf ${#_statusMessage} && tput ed
+  else
+    if ! tar --create $_excludes --gzip --file $FILE $BASE/database.sql; then
+      consoleWriteLine "Failed!"
+      exit 1
+    fi
+  fi
+  
+  consoleWriteLine "Done."
 fi
 
 # Now that the database dump is packed up, delete it
-# We don't want to delete it if we never even exported it or if we didn't create an archive
-if [[ "false" == $SKIP_DB && "false" == $SKIP_FS ]]; then
+# We don't want to delete it if we never even exported it
+if [[ "false" == $SKIP_DB ]]; then
   consoleWriteVerbose "Deleting database dump..."
   rm --force -- $BASE/database.sql
 fi
