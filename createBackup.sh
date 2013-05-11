@@ -408,6 +408,7 @@ fi
 
 
 # Create backup archive
+
 if [[ "false" == $SKIP_FS ]]; then
   
   _excludes=
@@ -419,50 +420,35 @@ if [[ "false" == $SKIP_FS ]]; then
   fi
   
   _statusMessage="Compressing TYPO3 installation..."
-  consoleWrite $_statusMessage
-  if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
-    consoleWriteLine
-    _folderSize=`du --summarize --bytes $BASE | cut --fields 1`
-    if ! tar --create $_excludes --file - $BASE | pv --progress --rate --bytes --size $_folderSize | gzip --best > $FILE; then
-      consoleWriteLine "Failed!"
-      exit 1
-    fi
-    # Clear pv output and position cursor after status message
-    # If stderr was redirected from the console, this messes up the prompt.
-    # It's unfortunate, but ignored for the time being
-    tput cuu 2 && tput cuf ${#_statusMessage} && tput ed
-  else
-    if ! tar --create $_excludes --gzip --file $FILE $BASE; then
-      consoleWriteLine "Failed!"
-      exit 1
-    fi
-  fi
-  
-  consoleWriteLine "Done."
+  _compressionTarget=$BASE
+
 else
 
+  _excludes=
   _statusMessage="Compressing TYPO3 database..."
-  consoleWrite $_statusMessage
-  if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
-    consoleWriteLine
-    _databaseSize=`du --summarize --bytes $BASE/database.sql | cut --fields 1`
-    if ! tar --create --file - $BASE/database.sql | pv --progress --rate --bytes --size $_databaseSize | gzip --best > $FILE; then
-      consoleWriteLine "Failed!"
-      exit 1
-    fi
-    # Clear pv output and position cursor after status message
-    # If stderr was redirected from the console, this messes up the prompt.
-    # It's unfortunate, but ignored for the time being
-    tput cuu 2 && tput cuf ${#_statusMessage} && tput ed
-  else
-    if ! tar --create --gzip --file $FILE $BASE/database.sql; then
-      consoleWriteLine "Failed!"
-      exit 1
-    fi
-  fi
-  
-  consoleWriteLine "Done."
+  _compressionTarget=$BASE/database.sql
 fi
+
+consoleWrite $_statusMessage
+if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
+  consoleWriteLine
+  _dataSize=`du --summarize --bytes $_compressionTarget | cut --fields 1`
+  if ! tar --create $_excludes --file - $_compressionTarget | pv --progress --rate --bytes --size $_dataSize | gzip --best > $FILE; then
+    consoleWriteLine "Failed!"
+    exit 1
+  fi
+  # Clear pv output and position cursor after status message
+  # If stderr was redirected from the console, this messes up the prompt.
+  # It's unfortunate, but ignored for the time being
+  tput cuu 2 && tput cuf ${#_statusMessage} && tput ed
+else
+  if ! tar --create $_excludes --gzip --file $FILE $_compressionTarget; then
+    consoleWriteLine "Failed!"
+    exit 1
+  fi
+fi
+
+consoleWriteLine "Done."
 
 # Now that the database dump is packed up, delete it
 # We don't want to delete it if we never even exported it
