@@ -455,7 +455,7 @@ else
     # It's unfortunate, but ignored for the time being
     tput cuu 2 && tput cuf ${#_statusMessage} && tput ed
   else
-    if ! tar --create $_excludes --gzip --file $FILE $BASE/database.sql; then
+    if ! tar --create --gzip --file $FILE $BASE/database.sql; then
       consoleWriteLine "Failed!"
       exit 1
     fi
