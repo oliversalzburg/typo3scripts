@@ -319,8 +319,18 @@ if [[ ! -r $BASE ]]; then
   exit 1
 fi
 
+# Adding parameters to the filename
+PARAMS=""
+if [[ "true" == $SKIP_DB ]]; then
+  PARAMS+="-no-DB"
+fi
+
+if [[ "true" == $SKIP_FS ]]; then
+  PARAMS+="-no-FS"
+fi
+
 # Filename for snapshot
-FILE=$BASE-$(date +%Y-%m-%d-%H-%M).tgz
+FILE=$BASE-$(date +%Y-%m-%d-%H-%M)$PARAMS.tgz
 
 consoleWriteLine "Creating TYPO3 backup '$FILE'..."
 
@@ -398,6 +408,7 @@ fi
 
 
 # Create backup archive
+
 if [[ "false" == $SKIP_FS ]]; then
   
   _excludes=
@@ -409,33 +420,39 @@ if [[ "false" == $SKIP_FS ]]; then
   fi
   
   _statusMessage="Compressing TYPO3 installation..."
-  consoleWrite $_statusMessage
-  if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
-    consoleWriteLine
-    _folderSize=`du --summarize --bytes $BASE | cut --fields 1`
-    if ! tar --create $_excludes --file - $BASE | pv --progress --rate --bytes --size $_folderSize | gzip --best > $FILE; then
-      consoleWriteLine "Failed!"
-      exit 1
-    fi
-    # Clear pv output and position cursor after status message
-    # If stderr was redirected from the console, this messes up the prompt.
-    # It's unfortunate, but ignored for the time being
-    tput cuu 2 && tput cuf ${#_statusMessage} && tput ed
-  else
-    if ! tar --create $_excludes --gzip --file $FILE $BASE; then
-      consoleWriteLine "Failed!"
-      exit 1
-    fi
-  fi
-  
-  consoleWriteLine "Done."
+  _compressionTarget=$BASE
+
 else
-  consoleWriteLine "Skipping creating filesystem archive."
+
+  _excludes=
+  _statusMessage="Compressing TYPO3 database..."
+  _compressionTarget=$BASE/database.sql
 fi
 
+consoleWrite $_statusMessage
+if hash pv 2>&- && hash gzip 2>&- && hash du 2>&-; then
+  consoleWriteLine
+  _dataSize=`du --summarize --bytes $_compressionTarget | cut --fields 1`
+  if ! tar --create $_excludes --file - $_compressionTarget | pv --progress --rate --bytes --size $_dataSize | gzip --best > $FILE; then
+    consoleWriteLine "Failed!"
+    exit 1
+  fi
+  # Clear pv output and position cursor after status message
+  # If stderr was redirected from the console, this messes up the prompt.
+  # It's unfortunate, but ignored for the time being
+  tput cuu 2 && tput cuf ${#_statusMessage} && tput ed
+else
+  if ! tar --create $_excludes --gzip --file $FILE $_compressionTarget; then
+    consoleWriteLine "Failed!"
+    exit 1
+  fi
+fi
+
+consoleWriteLine "Done."
+
 # Now that the database dump is packed up, delete it
-# We don't want to delete it if we never even exported it or if we didn't create an archive
-if [[ "false" == $SKIP_DB && "false" == $SKIP_FS ]]; then
+# We don't want to delete it if we never even exported it
+if [[ "false" == $SKIP_DB ]]; then
   consoleWriteVerbose "Deleting database dump..."
   rm --force -- $BASE/database.sql
 fi
