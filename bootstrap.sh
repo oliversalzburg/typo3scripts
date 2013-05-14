@@ -29,7 +29,7 @@ function showHelp() {
   --version=VERSION   The version to install.
   --package=package   Which package to download/install.
   --skip-config       Skips writing any configuration data/file.
-  --skip-db-config    Skips writing the database configuration to localconf.php
+  --skip-db-config    Skips writing the database configuration.
   --skip-gm-detect    Skips the detection of GraphicsMagick.
   --skip-unzip-detect Skips the detection of the unzip utility.
   --skip-rights       Skip trying to fix access rights.
@@ -392,12 +392,11 @@ if [[ "$(id -u)" != "0" ]]; then
 fi
 
 # Is the user requesting a TYPO3 6.x branch?
+TYPO3_CONFIG_VERSION=4
 if [[ $VERSION == 6.* ]]; then
-  consoleWriteLine "The TYPO3 6.0 configuration file format is not supported by $SELF. Database configuration will be skipped."
-  SKIP_DB_CONFIG=true
-  SKIP_GM_DETECT=true
-  SKIP_UNZIP_DETECT=true
-  SKIP_CONFIG=true
+  # consoleWriteLine "The TYPO3 6.0 configuration file format is not supported by $SELF. Database configuration will be skipped."
+  consoleWriteLine "Using TYPO3 6.0 configuration file format."
+  TYPO3_CONFIG_VERSION=6
 fi
 
 # The name of the package
@@ -455,24 +454,39 @@ function newLineOnce() {
 }
 
 if [[ "true" != $SKIP_CONFIG ]]; then
-  consoleWrite "Generating localconf.php..."
+  if [[ "6" == $TYPO3_CONFIG_VERSION ]]; then
+    consoleWrite "Generating AdditionalConfiguration.php..."
+  else
+    consoleWrite "Generating localconf.php..."
+  fi
   TYPO3_CONFIG=
 fi
 
 # Add database configuration
 if [[ "false" == $SKIP_DB_CONFIG && "false" == $SKIP_CONFIG ]]; then
-  TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_username = '$USER';\n"
-  TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_password = '$PASS';\n"
-  TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_host     = '$HOST';\n"
-  # Writing the database name is currently disabled. There doesn't seem to be
-  # any advantage to it and it conflicts with the TYPO3 installer.
-  #TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db          = '$DB';\n"
+  if [[ "6" == $TYPO3_CONFIG_VERSION ]]; then
+    TYPO3_CONFIG=$TYPO3_CONFIG"\$GLOBALS['TYPO3_CONF_VARS']['DB']['username'] = '$USER';\n"
+    TYPO3_CONFIG=$TYPO3_CONFIG"\$GLOBALS['TYPO3_CONF_VARS']['DB']['password'] = '$PASS';\n"
+    TYPO3_CONFIG=$TYPO3_CONFIG"\$GLOBALS['TYPO3_CONF_VARS']['DB']['host']     = '$HOST';\n"
+    #TYPO3_CONFIG=$TYPO3_CONFIG"\$GLOBALS['TYPO3_CONF_VARS']['DB']['database'] = '$DB';\n"
+  else
+    TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_username = '$USER';\n"
+    TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_password = '$PASS';\n"
+    TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db_host     = '$HOST';\n"
+    # Writing the database name is currently disabled. There doesn't seem to be
+    # any advantage to it and it conflicts with the TYPO3 installer.
+    #TYPO3_CONFIG=$TYPO3_CONFIG"\$typo_db          = '$DB';\n"
+  fi
 fi
 
 # Write TYPO3 install tool password
 if [[ "false" == $SKIP_CONFIG ]]; then
   INSTALL_TOOL_PASSWORD_HASH=$(echo -n $INSTALL_TOOL_PASSWORD | md5sum | awk '{print $1}')
-  TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['BE']['installToolPassword'] = '$INSTALL_TOOL_PASSWORD_HASH';\n"
+  if [[ "6" == $TYPO3_CONFIG_VERSION ]]; then
+    TYPO3_CONFIG=$TYPO3_CONFIG"\$GLOBALS['TYPO3_CONF_VARS']['BE']['installToolPassword'] = '$INSTALL_TOOL_PASSWORD_HASH';\n"
+  else
+    TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['BE']['installToolPassword'] = '$INSTALL_TOOL_PASSWORD_HASH';\n"
+  fi
 fi
 
 # Add GraphicsMagick (if available)
@@ -500,14 +514,23 @@ fi
 
 # Write configuration
 if [[ "true" != $SKIP_CONFIG ]]; then
-  if ! $(cp $BASE/typo3conf/localconf.php $BASE/typo3conf/localconf.php.orig 2> /dev/null); then
-    consoleWriteLine "Failed! Unable to create copy of localconf.php"
-    exit 1
-  fi
-  
-  if ! sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/localconf.php.orig > $BASE/typo3conf/localconf.php; then
-    consoleWriteLine "Failed! Unable to modify localconf.php"
-    exit 1
+  _configurationFilename="localconf.php"
+  if [[ "6" == $TYPO3_CONFIG_VERSION ]]; then
+    _configurationFilename="AdditionalConfiguration.php"
+    # Post-6.0, we simply put our configuration into the AdditionalConfiguration.php
+    echo "<?\n$TYPO3_CONFIG" | sed "s/\\\n/\n/g" > $BASE/typo3conf/$_configurationFilename
+  else
+    # Create a copy of the original configuration
+    if ! $(cp $BASE/typo3conf/$_configurationFilename $BASE/typo3conf/$_configurationFilename.orig 2> /dev/null); then
+      consoleWriteLine "Failed! Unable to create copy of $_configurationFilename"
+      exit 1
+    fi
+    
+    # Pre-6.0 versions look for a marker in the localconf.php and add the configuration below it
+    if ! sed "/^## INSTALL SCRIPT EDIT POINT TOKEN/a $TYPO3_CONFIG" $BASE/typo3conf/$_configurationFilename.orig > $BASE/typo3conf/$_configurationFilename; then
+      consoleWriteLine "Failed! Unable to modify $_configurationFilename"
+      exit 1
+    fi
   fi
   consoleWriteLine "Done."
 fi
