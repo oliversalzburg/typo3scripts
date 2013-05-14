@@ -497,7 +497,11 @@ if [[ "false" == $SKIP_GM_DETECT && "false" == $SKIP_CONFIG ]]; then
     consoleWriteLine "  Could not find GraphicsMagick binary. im_version_5 will not be set."
   else
     LOCATION_GM=$(which gm)
-    TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['GFX']['im_version_5'] = '$LOCATION_GM';\n"
+    if [[ "6" == $TYPO3_CONFIG_VERSION ]]; then
+      TYPO3_CONFIG=$TYPO3_CONFIG"\$GLOBALS['TYPO3_CONF_VARS']['GFX']['im_version_5'] = '$LOCATION_GM';\n"
+    else
+      TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['GFX']['im_version_5'] = '$LOCATION_GM';\n"
+    fi
   fi
 fi
 
@@ -508,7 +512,11 @@ if [[ "false" == $SKIP_UNZIP_DETECT && "false" == $SKIP_CONFIG ]]; then
     consoleWriteLine "  Could not find unzip binary. unzip_path will not be set."
   else
     LOCATION_UNZIP=$(which unzip)
-    TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['BE']['unzip_path'] = '$LOCATION_UNZIP';\n"
+    if [[ "6" == $TYPO3_CONFIG_VERSION ]]; then
+      TYPO3_CONFIG=$TYPO3_CONFIG"\$GLOBALS['TYPO3_CONF_VARS']['BE']['unzip_path'] = '$LOCATION_UNZIP';\n"
+    else
+      TYPO3_CONFIG=$TYPO3_CONFIG"\$TYPO3_CONF_VARS['BE']['unzip_path'] = '$LOCATION_UNZIP';\n"
+    fi
   fi
 fi
 
