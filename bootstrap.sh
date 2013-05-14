@@ -115,14 +115,6 @@ STORE=.
 PACKAGE=blankpackage
 # Script Configuration end
 
-# Pre-initialize password to random 16-character string if possible
-if [[ -r /dev/urandom ]]; then
-  # Generate a password for the database user
-  PASS=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
-  # Generate another password for the TYPO3 install tool
-  INSTALL_TOOL_PASSWORD=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
-fi
-
 # Pre-initialize the owner to the user that called sudo (if applicable)
 if [[ "$(id -u)" == "0" ]]; then
   OWNER=$SUDO_USER
@@ -231,6 +223,14 @@ for option in $*; do
       ;;
   esac
 done
+
+# Pre-initialize password to random 16-character string if possible
+if [[ -r /dev/urandom ]]; then
+  # Generate a password for the database user
+  PASS=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
+  # Generate another password for the TYPO3 install tool
+  INSTALL_TOOL_PASSWORD=$(head --bytes=100 /dev/urandom | sha1sum | head --bytes=16)
+fi
 
 # Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 BASE_CONFIG_FILENAME="typo3scripts.conf"
