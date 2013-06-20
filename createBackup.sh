@@ -348,7 +348,7 @@ if [[ "false" == $SKIP_DB ]]; then
     consoleWriteLine "Failed!"
     consoleWriteLine "Error: $_errorMessage"
     # Try to delete temporary file
-    rm $BASE/database.sql.tables 2>&1 > /dev/null
+    rm $_tablesList 2>&1 > /dev/null
     exit 1
   fi
   
@@ -371,7 +371,7 @@ if [[ "false" == $SKIP_DB ]]; then
     done < $_tablesList
     
     # Try to delete temporary file
-    rm $BASE/database.sql.tables 2>&1 > /dev/null
+    rm $_tablesList 2>&1 > /dev/null
   fi
   
   set +e errexit
@@ -455,6 +455,8 @@ consoleWriteLine "Done."
 if [[ "false" == $SKIP_DB ]]; then
   consoleWriteVerbose "Deleting database dump..."
   rm --force -- $BASE/database.sql
+  # Also delete list of tables
+  rm $_tablesList 2>&1 > /dev/null
 fi
 consoleWriteLineVerbose "Done!"
 
