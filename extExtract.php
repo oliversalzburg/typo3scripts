@@ -229,7 +229,7 @@ foreach( $argv as $_option ) {
 // Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 $BASE_CONFIG_FILENAME = "typo3scripts.conf";
 if( file_exists( $BASE_CONFIG_FILENAME ) ) {
-  if( is_readable( $BASE_CONFIG_FILENAME ) ) {
+  if( !is_readable( $BASE_CONFIG_FILENAME ) ) {
     consoleWriteLine( "Unable to read '" . $BASE_CONFIG_FILENAME . "'. Check permissions." );
     exit( 1 );
   }
