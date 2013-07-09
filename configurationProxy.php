@@ -56,13 +56,6 @@ function extractConfig() {
   preg_match_all( "/(?<=typo_db_host = ')[^']*(?=';)/", $_configFileContent, $_hostMatch );
 }
 
-define( "REQUIRED_ARGUMENT_COUNT", 1 );
-if( $argc <= REQUIRED_ARGUMENT_COUNT ) {
-  consoleWriteLine( "Insufficient command line arguments!" );
-  consoleWriteLine( "Use " . INVNAME . " --help to get additional information." );
-  exit( 1 );
-}
-
 # Script Configuration start
 # Should the script give more detailed feedback?
 $VERBOSE="false";
@@ -92,20 +85,31 @@ $VARIABLE_VALUE="";
 # Script Configuration end
 
 function consoleWrite( $args ) {
+  global $QUIET;
   if( "false" == "$QUIET" ) file_put_contents( "php://stderr", $args );
   return 0;
 }
 function consoleWriteLine( $args ) {
+  global $QUIET;
   if( "false" == "$QUIET" ) file_put_contents( "php://stderr", $args . "\n" );
   return 0;
 }
 function consoleWriteVerbose( $args ) {
+  global $VERBOSE;
   if( $VERBOSE ) consoleWrite( $args );
   return 0;
 }
 function consoleWriteLineVerbose( $args ) {
+  global $VERBOSE;
   if( $VERBOSE ) consoleWriteLine( $args );
   return 0;
+}
+
+define( "REQUIRED_ARGUMENT_COUNT", 1 );
+if( $argc <= REQUIRED_ARGUMENT_COUNT ) {
+  consoleWriteLine( "Insufficient command line arguments!" );
+  consoleWriteLine( "Use " . INVNAME . " --help to get additional information." );
+  exit( 1 );
 }
 
 // The base location from where to retrieve new versions of this script
@@ -239,34 +243,34 @@ if( file_exists( $CONFIG_FILENAME ) ) {
 foreach( $argv as $_option ) {
   if( $_option === $argv[ 0 ] ) continue;
 
-         if( 0 === strpos( $_option, "--verbose" ) ) {
+         if( $_option == "--verbose" ) {
     $VERBOSE = "true";
     
-  } else if( 0 === strpos( $_option, "--quiet" ) ) {
+  } else if( $_option == "--quiet" ) {
     $QUIET = "true";
   
-  } else if( 0 === strpos( $_option, "--force" ) ) {
+  } else if( $_option == "--force" ) {
     $FORCE = "true";
       
-  } else if( 0 === strpos( $_option, "--update" ) ) {
+  } else if( $_option == "--update" ) {
     runSelfUpdate();
     
-  } else if( 0 === strpos( $_option, "--update-check" ) ) {
+  } else if( $_option == "--update-check" ) {
     $returnValue = updateCheck();
     exit( $returnValue );
 
   } else if( 0 === strpos( $_option, "--base=" ) ) {
     $BASE = substr( $_option, strpos( $_option, "=" ) + 1 );
 
-  } else if( 0 === strpos( $_option, "--export-config" ) ) {
+  } else if( $_option == "--export-config" ) {
     exportConfig();
     exit( 0 );
 
-  } else if( 0 === strpos( $_option, "--extract-config" ) ) {
+  } else if( $_option == "--extract-config" ) {
     extractConfig();
     exit( 0 );
     
-  } else if( 0 === strpos( $_option, "--dump" ) ) {
+  } else if( $_option == "--dump" ) {
     $DUMP    = "true";
     
   } else if( 0 === strpos( $_option, "--get=" ) ) {

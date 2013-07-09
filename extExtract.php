@@ -257,30 +257,30 @@ if( file_exists( $CONFIG_FILENAME ) ) {
 foreach( $argv as $_option ) {
   if( $_option === $argv[ 0 ] ) continue;
 
-         if( 0 === strpos( $_option, "--verbose" ) ) {
+         if( $_option == "--verbose" ) {
     $VERBOSE = "true";
     
-  } else if( 0 === strpos( $_option, "--quiet" ) ) {
+  } else if( $_option == "--quiet" ) {
     $QUIET = "true";
   
-  } else if( 0 === strpos( $_option, "--force" ) ) {
+  } else if( $_option == "--force" ) {
     $FORCE = "true";
       
-  } else if( 0 === strpos( $_option, "--update" ) ) {
+  } else if( $_option == "--update" ) {
     runSelfUpdate();
     
-  } else if( 0 === strpos( $_option, "--update-check" ) ) {
+  } else if( $_option == "--update-check" ) {
     $returnValue = updateCheck();
     exit( $returnValue );
 
   } else if( 0 === strpos( $_option, "--base=" ) ) {
     $BASE = substr( $_option, strpos( $_option, "=" ) + 1 );
 
-  } else if( 0 === strpos( $_option, "--export-config" ) ) {
+  } else if( $_option == "--export-config" ) {
     exportConfig();
     exit( 0 );
 
-  } else if( 0 === strpos( $_option, "--extract-config" ) ) {
+  } else if( $_option == "--extract-config" ) {
     extractConfig();
     exit( 0 );
 
@@ -290,20 +290,20 @@ foreach( $argv as $_option ) {
   } else if( 0 === strpos( $_option, "--force-version=" ) ) {
     $FORCE_VERSION = substr( $_option, strpos( $_option, "=" ) + 1 );
     
-  } else if( 0 === strpos( $_option, "--dump" ) ) {
+  } else if( $_option == "--dump" ) {
     $DUMP    = "true";
     $EXTRACT = "false";
     
   } else if( 0 === strpos( $_option, "--string-limit=" ) ) {
     $STRING_LIMIT = substr( $_option, strpos( $_option, "=" ) + 1 );
   
-  } else if( 0 === strpos( $_option, "--extract" ) ) {
+  } else if( $_option == "--extract" ) {
     $EXTRACT = "true";
     
   } else if( 0 === strpos( $_option, "--output-dir=" ) ) {
     $OUTPUTDIR = substr( $_option, strpos( $_option, "=" ) + 1 );
 
-  } else if( 0 === strpos( $_option, "--output-file" ) ) {
+  } else if( $_option == "--output-file" ) {
     $_equalSignIndex = strpos( $_option, "=" );
     if( FALSE === $_equalSignIndex ) {
       $OUTPUTFILE = FALSE;
@@ -355,7 +355,7 @@ function downloadExtension( $_extKey, $_version ) {
   
   file_put_contents( $_tempFileName, $_extensionData );
   if( "" === $OUTPUTFILE ) {
-    register_shutdown_function( "cleanUpTempFile", &$_tempFileName );
+    register_shutdown_function( "cleanUpTempFile", $_tempFileName );
   }
   
   return $_tempFileName;
