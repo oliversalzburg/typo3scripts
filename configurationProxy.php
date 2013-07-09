@@ -301,31 +301,45 @@ if( "" != $GET_VARIABLE && "false" != $DUMP ) {
   exit( 1 );
 }
 
-// Grab main configuration
-$GLOBALS[ "TYPO3_CONF_VARS" ] = require( "typo3/typo3conf/LocalConfiguration.php" );
-
-// Grab additional configuration
-$_additionalConfiguration = "typo3/typo3conf/AdditionalConfiguration.php";
-if( is_file( $_additionalConfiguration ) ) {
-  require $_additionalConfiguration;
+function readConfiguration( $loadAdditional = true ) {
+  // Grab main configuration
+  $GLOBALS[ "TYPO3_CONF_VARS" ] = require( "typo3/typo3conf/LocalConfiguration.php" );
+  
+  if( $loadAdditional ) {
+    // Grab additional configuration
+    $_additionalConfiguration = "typo3/typo3conf/AdditionalConfiguration.php";
+    if( is_file( $_additionalConfiguration ) ) {
+      require $_additionalConfiguration;
+    }
+  }
 }
 
 // Should we dump?
 if( "true" == $DUMP ) {
+  readConfiguration();
   var_export( $GLOBALS[ "TYPO3_CONF_VARS" ] );
   if( "true" == $MERGE ) {
-    consoleWriteLineVerbose( "Configuration files won't be merged when using --dump" );
+    consoleWriteLineVerbose( "Configuration files won't be merged when using --dump." );
   }
   exit( 0 );
 
 } else if( "" != $GET_VARIABLE || "" != $SET_VARIABLE ) {
+  // Load the configuration.
+  // Only when setting a variable and not merging, ignore the additional configuration.
+  readConfiguration( ( "" == $SET_VARIABLE || "true" == $MERGE ) );
+  
   // Retrieve a reference to the variable in the settings array
   $variableName = ( "" != $GET_VARIABLE ) ? $GET_VARIABLE : $SET_VARIABLE;
   
   $variablePath = explode( ".", $variableName );
   $reference = &$GLOBALS;
   foreach( $variablePath as $pathElement ) {
-    $reference = &$reference[ $pathElement ];
+    if( isset( $reference[ $pathElement ] ) ) {
+      $reference = &$reference[ $pathElement ];
+    } else {
+      $reference[ $pathElement ] = "SOMETHING";
+      $reference = &$reference[ $pathElement ];
+    }
   }
   //$accessor = implode( "' ][ '", $variablePath );
   //$variable = "\$GLOBALS[ '". $accessor . "' ]";
@@ -344,9 +358,17 @@ if( "true" == $DUMP ) {
     } else {
       $reference = $VARIABLE_VALUE;
     }
-    var_export( $GLOBALS[ "TYPO3_CONF_VARS" ] );
   }
-  
+} else {
+  readConfiguration();
+}
+
+// If needed, write the configuration back to disk
+if( "" != $SET_VARIABLE || "true" == $MERGE ) {
+  echo "<?php\n";
+  echo "return ";
+  var_export( $GLOBALS[ "TYPO3_CONF_VARS" ] );
+  echo ";";
 }
 
 # vim:ts=2:sw=2:expandtab:
