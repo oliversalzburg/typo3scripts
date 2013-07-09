@@ -396,12 +396,12 @@ for _extDirectory in "$BASE/typo3conf/ext/"*; do
   _errorMessage=$(echo $_query | mysql --host=$HOST --user=$USER --pass=$PASS --database=$DB --batch --skip-column-names 2>&1 > extVersion.out)
   _status=$?
   _latestVersion=$(cat extVersion.out)
+  rm -f extVersion.out
   if [[ "" == $_latestVersion ]]; then
     consoleWriteLine        "Warning: Could not determine the latest version of extension '$_extKey'!"
     consoleWriteLineVerbose "         No entry for the extension could be found in the extension cache."
     continue
   fi
-  rm -f extVersion.out
   set -e errexit
   if [[ 0 < $_status ]]; then
     consoleWriteLine "Failed!"
