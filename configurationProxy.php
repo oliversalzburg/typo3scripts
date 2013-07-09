@@ -289,11 +289,53 @@ foreach( $argv as $_option ) {
 
 // Begin main operation
 
-$GLOBALS[ 'TYPO3_CONF_VARS' ] = require( "typo3/typo3conf/LocalConfiguration.php" );
+if( "" != $GET_VARIABLE && "false" != $DUMP ) {
+  consoleWriteLine( "--get and --dump can't be used together." );
+  exit( 1 );
+}
 
-echo "<?php\n";
-echo "return ";
-var_export($GLOBALS['TYPO3_CONF_VARS']);
-echo ";";
+// Grab main configuration
+$GLOBALS[ "TYPO3_CONF_VARS" ] = require( "typo3/typo3conf/LocalConfiguration.php" );
+
+// Grab additional configuration
+$_additionalConfiguration = "typo3/typo3conf/AdditionalConfiguration.php";
+if( is_file( $_additionalConfiguration ) ) {
+  require $_additionalConfiguration;
+}
+
+// Should we dump?
+if( "true" == $DUMP ) {
+  var_export( $GLOBALS[ "TYPO3_CONF_VARS" ] );
+
+} else if( "" != $GET_VARIABLE || "" != $SET_VARIABLE ) {
+  
+  $variableName = ( "" != $GET_VARIABLE ) ? $GET_VARIABLE : $SET_VARIABLE;
+  
+  $variablePath = explode( ".", $variableName );
+  $reference = &$GLOBALS;
+  foreach( $variablePath as $pathElement ) {
+    $reference = &$reference[ $pathElement ];
+  }
+  //$accessor = implode( "' ][ '", $variablePath );
+  //$variable = "\$GLOBALS[ '". $accessor . "' ]";
+  
+  //echo $variable . " = " . $reference . "\n";
+  
+  if( "" != $GET_VARIABLE ) {
+    // Get a variable
+    echo $reference . "\n";
+    exit( 0 );
+    
+  } else {
+    // Set a variable
+    if( "" == $VARIABLE_VALUE ) {
+      $reference = null;
+    } else {
+      $reference = $VARIABLE_VALUE;
+    }
+    var_export( $GLOBALS[ "TYPO3_CONF_VARS" ] );
+  }
+  
+}
 
 # vim:ts=2:sw=2:expandtab:
