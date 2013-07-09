@@ -243,34 +243,34 @@ if( file_exists( $CONFIG_FILENAME ) ) {
 foreach( $argv as $_option ) {
   if( $_option === $argv[ 0 ] ) continue;
 
-         if( 0 === strpos( $_option, "--verbose" ) ) {
+         if( $_option == "--verbose" ) {
     $VERBOSE = "true";
     
-  } else if( 0 === strpos( $_option, "--quiet" ) ) {
+  } else if( $_option == "--quiet" ) {
     $QUIET = "true";
   
-  } else if( 0 === strpos( $_option, "--force" ) ) {
+  } else if( $_option == "--force" ) {
     $FORCE = "true";
       
-  } else if( 0 === strpos( $_option, "--update" ) ) {
+  } else if( $_option == "--update" ) {
     runSelfUpdate();
     
-  } else if( 0 === strpos( $_option, "--update-check" ) ) {
+  } else if( $_option == "--update-check" ) {
     $returnValue = updateCheck();
     exit( $returnValue );
 
   } else if( 0 === strpos( $_option, "--base=" ) ) {
     $BASE = substr( $_option, strpos( $_option, "=" ) + 1 );
 
-  } else if( 0 === strpos( $_option, "--export-config" ) ) {
+  } else if( $_option == "--export-config" ) {
     exportConfig();
     exit( 0 );
 
-  } else if( 0 === strpos( $_option, "--extract-config" ) ) {
+  } else if( $_option == "--extract-config" ) {
     extractConfig();
     exit( 0 );
     
-  } else if( 0 === strpos( $_option, "--dump" ) ) {
+  } else if( $_option == "--dump" ) {
     $DUMP    = "true";
     
   } else if( 0 === strpos( $_option, "--get=" ) ) {
