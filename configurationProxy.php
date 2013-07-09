@@ -56,13 +56,6 @@ function extractConfig() {
   preg_match_all( "/(?<=typo_db_host = ')[^']*(?=';)/", $_configFileContent, $_hostMatch );
 }
 
-define( "REQUIRED_ARGUMENT_COUNT", 1 );
-if( $argc <= REQUIRED_ARGUMENT_COUNT ) {
-  consoleWriteLine( "Insufficient command line arguments!" );
-  consoleWriteLine( "Use " . INVNAME . " --help to get additional information." );
-  exit( 1 );
-}
-
 # Script Configuration start
 # Should the script give more detailed feedback?
 $VERBOSE="false";
@@ -92,20 +85,31 @@ $VARIABLE_VALUE="";
 # Script Configuration end
 
 function consoleWrite( $args ) {
+  global $QUIET;
   if( "false" == "$QUIET" ) file_put_contents( "php://stderr", $args );
   return 0;
 }
 function consoleWriteLine( $args ) {
+  global $QUIET;
   if( "false" == "$QUIET" ) file_put_contents( "php://stderr", $args . "\n" );
   return 0;
 }
 function consoleWriteVerbose( $args ) {
+  global $VERBOSE;
   if( $VERBOSE ) consoleWrite( $args );
   return 0;
 }
 function consoleWriteLineVerbose( $args ) {
+  global $VERBOSE;
   if( $VERBOSE ) consoleWriteLine( $args );
   return 0;
+}
+
+define( "REQUIRED_ARGUMENT_COUNT", 1 );
+if( $argc <= REQUIRED_ARGUMENT_COUNT ) {
+  consoleWriteLine( "Insufficient command line arguments!" );
+  consoleWriteLine( "Use " . INVNAME . " --help to get additional information." );
+  exit( 1 );
 }
 
 // The base location from where to retrieve new versions of this script
