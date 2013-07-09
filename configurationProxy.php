@@ -49,13 +49,8 @@ function exportConfig() {
 
 function extractConfig() {
   echo "Extracting a configuration is currently not supported!\n";
+  echo "Please use another script to extract the configuration.\n";
   return;
-
-  $LOCALCONF = $BASE . "/typo3conf/localconf.php";
-  $_configFileContent = file_get_contents( $LOCALCONF );
-
-  $_hostMatch = "";
-  preg_match_all( "/(?<=typo_db_host = ')[^']*(?=';)/", $_configFileContent, $_hostMatch );
 }
 
 # Script Configuration start

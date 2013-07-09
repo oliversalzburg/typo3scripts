@@ -50,11 +50,24 @@ function exportConfig() {
 # Extract all known (database related) parameters from the TYPO3 configuration.
 function extractConfig() {
   LOCALCONF="$BASE/typo3conf/localconf.php"
-  
-  echo HOST=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_host = ')[^']*(?=';)")
-  echo USER=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_username = ')[^']*(?=';)")
-  echo PASS=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_password = ')[^']*(?=';)")
-  echo DB=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db = ')[^']*(?=';)")
+  LOCALCONFIGURATION="$BASE/typo3conf/LocalConfiguration.php"
+  if [[ -r $LOCALCONF ]]; then
+    echo HOST=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_host = ')[^']*(?=';)")
+    echo USER=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_username = ')[^']*(?=';)")
+    echo PASS=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_password = ')[^']*(?=';)")
+    echo DB=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db = ')[^']*(?=';)")
+  elif [[ -r $LOCALCONFIGURATION ]]; then
+    if [[ ! -e "./configurationProxy.php" ]]; then
+      echo "Required 'configurationProxy.php' is missing.";
+      exit 1
+    fi
+    echo HOST=$(./configurationProxy.php --get=TYPO3_CONF_VARS.DB.host)
+    echo USER=$(./configurationProxy.php --get=TYPO3_CONF_VARS.DB.username)
+    echo PASS=$(./configurationProxy.php --get=TYPO3_CONF_VARS.DB.password)
+    echo DB=$(./configurationProxy.php --get=TYPO3_CONF_VARS.DB.database)
+  else
+    echo "Unable to find readable configuration file." >&2
+  fi
 }
 
 # Check on minimal command line argument count

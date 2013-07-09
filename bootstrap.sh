@@ -96,7 +96,7 @@ FORCE=false
 # The base directory where TYPO3 should be installed
 BASE=typo3
 # The version to install
-VERSION=4.7.10
+VERSION=6.1.1
 # The hostname of the MySQL server that TYPO3 uses
 HOST=localhost
 # The username used to connect to that MySQL server
