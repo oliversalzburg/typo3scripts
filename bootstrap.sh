@@ -58,11 +58,20 @@ function exportConfig() {
 # Extract all known (database related) parameters from the TYPO3 configuration.
 function extractConfig() {
   LOCALCONF="$BASE/typo3conf/localconf.php"
-  
-  echo HOST=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_host = ')[^']*(?=';)")
-  echo USER=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_username = ')[^']*(?=';)")
-  echo PASS=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_password = ')[^']*(?=';)")
-  echo DB=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db = ')[^']*(?=';)")
+  LOCALCONFIGURATION="$BASE/typo3conf/LocalConfiguration.php"
+  if [[ -r $LOCALCONF ]]; then
+    echo HOST=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_host = ')[^']*(?=';)")
+    echo USER=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_username = ')[^']*(?=';)")
+    echo PASS=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_password = ')[^']*(?=';)")
+    echo DB=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db = ')[^']*(?=';)")
+  elif [[ -r $LOCALCONFIGURATION ]]; then
+    echo HOST=$(./configurationProxy.php --get=TYPO3_CONF_VARS.DB.host)
+    echo USER=$(./configurationProxy.php --get=TYPO3_CONF_VARS.DB.username)
+    echo PASS=$(./configurationProxy.php --get=TYPO3_CONF_VARS.DB.password)
+    echo DB=$(./configurationProxy.php --get=TYPO3_CONF_VARS.DB.database)
+  else
+    echo "Unable to find readable configuration file." >&2
+  fi
 }
 
 # Check on minimal command line argument count
@@ -279,6 +288,10 @@ for option in $*; do
       exportConfig
       exit 0
       ;;
+    --extract-config)
+      extractConfig
+      exit 0
+      ;;
     --version=*)
       VERSION=$(echo $option | cut -d'=' -f2)
       ;;
@@ -394,7 +407,6 @@ fi
 # Is the user requesting a TYPO3 6.x branch?
 TYPO3_CONFIG_VERSION=4
 if [[ $VERSION == 6.* ]]; then
-  # consoleWriteLine "The TYPO3 6.0 configuration file format is not supported by $SELF. Database configuration will be skipped."
   consoleWriteLine "Using TYPO3 6.0 configuration file format."
   TYPO3_CONFIG_VERSION=6
 fi
