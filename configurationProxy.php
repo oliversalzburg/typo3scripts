@@ -337,7 +337,7 @@ if( "true" == $DUMP ) {
     if( isset( $reference[ $pathElement ] ) ) {
       $reference = &$reference[ $pathElement ];
     } else {
-      $reference[ $pathElement ] = "SOMETHING";
+      $reference[ $pathElement ] = "undefined";
       $reference = &$reference[ $pathElement ];
     }
   }
