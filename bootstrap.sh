@@ -65,6 +65,10 @@ function extractConfig() {
     echo PASS=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db_password = ')[^']*(?=';)")
     echo DB=$(tac $LOCALCONF | grep --perl-regexp --only-matching "(?<=typo_db = ')[^']*(?=';)")
   elif [[ -r $LOCALCONFIGURATION ]]; then
+    if [[ ! -e "./configurationProxy.php" ]]; then
+      echo "Required 'configurationProxy.php' is missing.";
+      exit 1
+    fi
     echo HOST=$(./configurationProxy.php --get=TYPO3_CONF_VARS.DB.host)
     echo USER=$(./configurationProxy.php --get=TYPO3_CONF_VARS.DB.username)
     echo PASS=$(./configurationProxy.php --get=TYPO3_CONF_VARS.DB.password)
