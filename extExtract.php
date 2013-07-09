@@ -355,7 +355,7 @@ function downloadExtension( $_extKey, $_version ) {
   
   file_put_contents( $_tempFileName, $_extensionData );
   if( "" === $OUTPUTFILE ) {
-    register_shutdown_function( "cleanUpTempFile", &$_tempFileName );
+    register_shutdown_function( "cleanUpTempFile", $_tempFileName );
   }
   
   return $_tempFileName;
