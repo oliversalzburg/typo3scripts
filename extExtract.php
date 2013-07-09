@@ -106,18 +106,22 @@ $FORCE_VERSION="";
 # Script Configuration end
 
 function consoleWrite( $args ) {
+  global $QUIET;
   if( "false" == "$QUIET" ) file_put_contents( "php://stderr", $args );
   return 0;
 }
 function consoleWriteLine( $args ) {
+  global $QUIET;
   if( "false" == "$QUIET" ) file_put_contents( "php://stderr", $args . "\n" );
   return 0;
 }
 function consoleWriteVerbose( $args ) {
+  global $VERBOSE;
   if( $VERBOSE ) consoleWrite( $args );
   return 0;
 }
 function consoleWriteLineVerbose( $args ) {
+  global $VERBOSE;
   if( $VERBOSE ) consoleWriteLine( $args );
   return 0;
 }
@@ -225,7 +229,7 @@ foreach( $argv as $_option ) {
 // Read external configuration - Stage 1 - typo3scripts.conf (overwrites default, hard-coded configuration)
 $BASE_CONFIG_FILENAME = "typo3scripts.conf";
 if( file_exists( $BASE_CONFIG_FILENAME ) ) {
-  if( is_readable( $BASE_CONFIG_FILENAME ) ) {
+  if( !is_readable( $BASE_CONFIG_FILENAME ) ) {
     consoleWriteLine( "Unable to read '" . $BASE_CONFIG_FILENAME . "'. Check permissions." );
     exit( 1 );
   }
