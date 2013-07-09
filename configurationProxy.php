@@ -31,6 +31,8 @@ function showHelp( $name ) {
   --get=SETTING       Retrieves the value for the configuration item SETTING.
   --set=SETTING       Marks SETTING to be changed by --value.
   --value=VALUE       Sets previously marked setting to VALUE.
+  --merge             Merge the AdditionalConfiguration file into the 
+                      LocalConfiguration when applicable.
 
 EOS;
 }
@@ -82,6 +84,8 @@ $GET_VARIABLE="";
 $SET_VARIABLE="";
 # The value for the variable that should be set.
 $VARIABLE_VALUE="";
+# Merge both configuration files.
+$MERGE="false";
 # Script Configuration end
 
 function consoleWrite( $args ) {
@@ -271,7 +275,7 @@ foreach( $argv as $_option ) {
     exit( 0 );
     
   } else if( $_option == "--dump" ) {
-    $DUMP    = "true";
+    $DUMP = "true";
     
   } else if( 0 === strpos( $_option, "--get=" ) ) {
     $GET_VARIABLE = substr( $_option, strpos( $_option, "=" ) + 1 );
@@ -281,6 +285,9 @@ foreach( $argv as $_option ) {
     
   } else if( 0 === strpos( $_option, "--value=" ) ) {
     $VARIABLE_VALUE = substr( $_option, strpos( $_option, "=" ) + 1 );
+   
+  } else if( $_option == "--merge" ) {
+    $MERGE = "true"; 
     
   } else {
     $GET_VARIABLE = $_option;
@@ -306,9 +313,13 @@ if( is_file( $_additionalConfiguration ) ) {
 // Should we dump?
 if( "true" == $DUMP ) {
   var_export( $GLOBALS[ "TYPO3_CONF_VARS" ] );
+  if( "true" == $MERGE ) {
+    consoleWriteLineVerbose( "Configuration files won't be merged when using --dump" );
+  }
+  exit( 0 );
 
 } else if( "" != $GET_VARIABLE || "" != $SET_VARIABLE ) {
-  
+  // Retrieve a reference to the variable in the settings array
   $variableName = ( "" != $GET_VARIABLE ) ? $GET_VARIABLE : $SET_VARIABLE;
   
   $variablePath = explode( ".", $variableName );
