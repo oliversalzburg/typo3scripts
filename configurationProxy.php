@@ -96,12 +96,12 @@ function consoleWriteLine( $args ) {
 }
 function consoleWriteVerbose( $args ) {
   global $VERBOSE;
-  if( $VERBOSE ) consoleWrite( $args );
+  if( "true" == $VERBOSE ) consoleWrite( $args );
   return 0;
 }
 function consoleWriteLineVerbose( $args ) {
   global $VERBOSE;
-  if( $VERBOSE ) consoleWriteLine( $args );
+  if( "true" == $VERBOSE ) consoleWriteLine( $args );
   return 0;
 }
 
