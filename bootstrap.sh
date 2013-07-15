@@ -542,7 +542,7 @@ if [[ "true" != $SKIP_CONFIG ]]; then
   if [[ "6" == $TYPO3_CONFIG_VERSION ]]; then
     _configurationFilename="AdditionalConfiguration.php"
     # Post-6.0, we simply put our configuration into the AdditionalConfiguration.php
-    echo "<?\n$TYPO3_CONFIG" | sed "s/\\\n/\n/g" > $BASE/typo3conf/$_configurationFilename
+    echo "<?php\n$TYPO3_CONFIG" | sed "s/\\\n/\n/g" > $BASE/typo3conf/$_configurationFilename
   else
     # Create a copy of the original configuration
     if ! $(cp $BASE/typo3conf/$_configurationFilename $BASE/typo3conf/$_configurationFilename.orig 2> /dev/null); then
