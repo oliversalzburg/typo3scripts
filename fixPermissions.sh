@@ -271,6 +271,12 @@ if [[ ! -d "$BASE/typo3temp" ]]; then
   mkdir "$BASE/typo3temp"
   consoleWriteLine "Done"
 fi
+# Same goes for the uploads folder
+if [[ ! -d "$BASE/uploads" ]]; then
+  consoleWrite "Creating '$BASE/uploads'..."
+  mkdir "$BASE/uploads"
+  consoleWriteLine "Done"
+fi
 
 # Begin main operation
 consoleWrite "Changing ownership of '$BASE' to '$OWNER'..."
