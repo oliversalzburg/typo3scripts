@@ -350,27 +350,29 @@ consoleWriteLine "Creating TYPO3 backup '$FILE'..."
 # Create database dump
 if [[ "false" == $SKIP_DB ]]; then
   consoleWrite "Creating database dump at '$BASE/database.sql'..."
-  
-  # Get all table names
-  _tablesList=$BASE/database.sql.tables
-  set +e errexit
-  _errorMessage=$(echo "SHOW TABLES;" | mysql --host=$HOST --user=$USER --password=$PASS $DB 2>&1 > $_tablesList)
-  _status=$?
-  set -e errexit
-  if [[ 0 < $_status ]]; then
-    consoleWriteLine "Failed!"
-    consoleWriteLine "Error: $_errorMessage"
-    # Try to delete temporary file
-    rm $_tablesList 2>&1 > /dev/null
-    exit 1
-  fi
-  
+    
   _fullTables=()
   _bareTables=()
   _noDataTables=
   _fullDataTables=
   
+  # Are there tables for which to only export the table structure?
   if [[ ${#NO_DATA[@]} > 0 ]]; then
+    # Get all table names
+    _tablesList=$BASE/database.sql.tables
+    set +e errexit
+    _errorMessage=$(echo "SHOW TABLES;" | mysql --host=$HOST --user=$USER --password=$PASS $DB 2>&1 > $_tablesList)
+    _status=$?
+    set -e errexit
+    if [[ 0 < $_status ]]; then
+      consoleWriteLine "Failed!"
+      consoleWriteLine "Error: $_errorMessage"
+      # Try to delete temporary file
+      rm $_tablesList 2>&1 > /dev/null
+      exit 1
+    fi
+    
+    # Construct the --ignore-table parameters
     consoleWriteLineVerbose
     while read _tableName; do
       for _noDataPattern in "${NO_DATA[@]}"; do
@@ -468,8 +470,6 @@ consoleWriteLine "Done."
 if [[ "false" == $SKIP_DB ]]; then
   consoleWriteVerbose "Deleting database dump..."
   rm --force -- $BASE/database.sql
-  # Also delete list of tables
-  rm $_tablesList 2>&1 > /dev/null
 fi
 consoleWriteLineVerbose "Done!"
 
