@@ -248,6 +248,10 @@ for option in $*; do
       exportConfig
       exit 0
       ;;
+    --extract-config)
+      extractConfig
+      exit 0
+      ;;
     --file=*)
       FILE=$(echo $option | cut -d'=' -f2)
       ;;
