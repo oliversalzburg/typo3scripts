@@ -348,7 +348,9 @@ fi
 consoleWriteLine "Done."
 
 consoleWrite "Extracting TYPO3 backup '$FILE'..."
-if ! tar --extract --gzip --file $FILE > /dev/null; then
+# The archive contains a single folder, this folder is the original BASE.
+# So for the extraction, we need to target the parent directory with /..
+if ! tar --extract --gzip --file $FILE --directory $BASE/.. > /dev/null; then
   consoleWriteLine "Failed!"
   exit 1
 fi
