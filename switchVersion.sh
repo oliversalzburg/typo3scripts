@@ -235,6 +235,9 @@ for option in $*; do
       exportConfig
       exit 0
       ;;
+    --base=*)
+      BASE=$(echo $option | cut -d'=' -f2)
+      ;;
     --version=*)
       VERSION=$(echo $option | cut -d'=' -f2)
       ;;

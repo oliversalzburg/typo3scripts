@@ -258,6 +258,9 @@ for option in $*; do
       exportConfig
       exit 0
       ;;
+    --base=*)
+      BASE=$(echo $option | cut -d'=' -f2)
+      ;;
     --hostname=*)
       HOST=$(echo $option | cut -d'=' -f2)
       ;;

@@ -255,6 +255,9 @@ for option in $*; do
     --file=*)
       FILE=$(echo $option | cut -d'=' -f2)
       ;;
+    --base=*)
+      BASE=$(echo $option | cut -d'=' -f2)
+      ;;
     --hostname=*)
       HOST=$(echo $option | cut -d'=' -f2)
       ;;
