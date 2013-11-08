@@ -273,6 +273,14 @@ consoleWriteLine "Succeeded."
 
 # Begin main operation
 
+# Make STORE an absolute path if it differs from BASE.
+# The only relative STORE location that should still be valid is the default
+# storage location BASE. Then we still use the relative .\ link.
+if [[ $BASE != $STORE ]]; then
+  STORE=$(cd "$STORE"; pwd)
+fi
+
+
 # Check default argument validity
 if [[ $VERSION == --* ]]; then
   consoleWriteLine "The given TYPO3 version '$VERSION' looks like a command line parameter."
@@ -342,11 +350,11 @@ fi
 
 # Switch symlink
 consoleWrite "Switching TYPO3 source symlink to '$VERSION_DIR'..."
-if ! rm --force -- $SYMLINK; then
+if ! rm --force -- $SYMLINK > /dev/null; then
   consoleWriteLine "Failed! Unable to remove old symlink '$SYMLINK'"
   exit 1
 fi
-if ! ln --symbolic ../$VERSION_DIR $SYMLINK; then
+if ! ln --symbolic $VERSION_DIR $SYMLINK; then
   consoleWriteLine "Failed! Unable to create new symlink '$SYMLINK'"
   exit 1
 fi
