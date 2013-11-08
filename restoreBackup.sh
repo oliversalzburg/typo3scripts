@@ -335,7 +335,7 @@ fi
 
 # Check if we can delete the target base folder
 consoleWrite "Testing write permissions in $BASE..."
-if ! find $BASE \( -exec test -w {} \; -o \( -exec echo {} \; -quit \) \) | xargs -I {} bash -c "if [ -n "{}" ]; then echo Failed\! >&2; echo {} is not writable\! >&2; exit 1; fi"; then
+if ! find $BASE -type f -o -type d \( -exec test -w {} \; -o \( -exec echo {} \; -quit \) \) | xargs -I {} bash -c "if [ -n "{}" ]; then echo Failed\! >&2; echo {} is not writable\! >&2; exit 1; fi"; then
   exit 1
 fi
 consoleWriteLine "Succeeded"
