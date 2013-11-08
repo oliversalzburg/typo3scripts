@@ -341,7 +341,7 @@ fi
 consoleWriteLine "Succeeded"
 
 consoleWrite "Erasing current TYPO3 installation '$BASE'..."
-if ! rm --recursive --force -- $BASE > /dev/null; then
+if ! rm --recursive --force -- $BASE/* > /dev/null; then
   consoleWriteLine "Failed!"
   exit 1
 fi
