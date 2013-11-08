@@ -290,6 +290,12 @@ if [[ ! -d "$BASE/uploads" ]]; then
   mkdir "$BASE/uploads"
   consoleWriteLine "Done"
 fi
+# And for the fileadmin folder
+if [[ ! -d "$BASE/fileadmin" ]]; then
+  consoleWrite "Creating '$BASE/fileadmin'..."
+  mkdir "$BASE/fileadmin"
+  consoleWriteLine "Done"
+fi
 
 # Begin main operation
 consoleWrite "Changing ownership of '$BASE' to '$OWNER'..."
