@@ -315,8 +315,16 @@ fi
 
 # Does the base directory exist?
 if [[ ! -d $BASE ]]; then
-  consoleWriteLine "The base directory '$BASE' does not seem to exist!"
-  exit 1
+  if [[ "true" == $FORCE ]]; then
+    # When --force was give, create the base directory
+    if ! mkdir $BASE; then
+      consoleWriteLine "Unable to create base directory '$BASE'!"
+      exit 1
+    fi
+  else
+    consoleWriteLine "The base directory '$BASE' does not seem to exist!"
+    exit 1
+  fi
 fi
 
 # Is the base directory writeable?
