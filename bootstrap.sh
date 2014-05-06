@@ -470,6 +470,12 @@ function newLineOnce() {
 }
 
 if [[ "true" != $SKIP_CONFIG ]]; then
+  # Create the typo3conf folder if it doesn't exist
+  if [[ ! -d "$BASE/typo3conf" ]]; then
+	  consoleWrite "Creating '$BASE/typo3conf'..."
+	  mkdir "$BASE/typo3conf"
+	  consoleWriteLine "Done"
+	fi
   if [[ "6" == $TYPO3_CONFIG_VERSION ]]; then
     consoleWrite "Generating AdditionalConfiguration.php..."
   else
@@ -566,6 +572,30 @@ consoleWriteLineVerbose "Done."
 
 # Fix permissions
 if ! $SKIP_RIGHTS; then
+  # Create the typo3conf folder if it doesn't exist
+  if [[ ! -d "$BASE/typo3conf" ]]; then
+	  consoleWrite "Creating '$BASE/typo3conf'..."
+	  mkdir "$BASE/typo3conf"
+	  consoleWriteLine "Done"
+	fi
+  if [[ ! -d "$BASE/typo3temp" ]]; then
+    consoleWrite "Creating '$BASE/typo3temp'..."
+    mkdir "$BASE/typo3temp"
+    consoleWriteLine "Done"
+  fi
+  # Same goes for the uploads folder
+  if [[ ! -d "$BASE/uploads" ]]; then
+    consoleWrite "Creating '$BASE/uploads'..."
+    mkdir "$BASE/uploads"
+    consoleWriteLine "Done"
+  fi
+  # And for the fileadmin folder
+  if [[ ! -d "$BASE/fileadmin" ]]; then
+    consoleWrite "Creating '$BASE/fileadmin'..."
+    mkdir "$BASE/fileadmin"
+    consoleWriteLine "Done"
+  fi
+
   consoleWrite "Adjusting access permissions for TYPO3 installation..."
   if ! $(id --group $HTTPD_GROUP > /dev/null); then
     consoleWriteLine "Failed! The supplied group '$HTTPD_GROUP' is not known on the system."
