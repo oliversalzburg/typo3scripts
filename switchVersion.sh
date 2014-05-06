@@ -378,7 +378,7 @@ fi
 PATH_T3LIB=$BASE/t3lib
 T3LIB_TARGET=typo3_src/t3lib
 consoleWrite "Checking 't3lib' symlink..."
-if [[ ! -h "$PATH_T3LIB" ]]; then
+if [[ ! -h "$PATH_T3LIB" && -e "$T3LIB_TARGET" ]]; then
   ln --symbolic "$T3LIB_TARGET" "$PATH_T3LIB"
   consoleWriteLine "Created."
 else
@@ -388,7 +388,18 @@ fi
 PATH_TYPO3=$BASE/typo3
 TYPO3_TARGET=typo3_src/typo3
 consoleWrite "Checking 'typo3' symlink..."
+# Check if no symlink exists.
 if [[ ! -h "$PATH_TYPO3" ]]; then
+  # None exists, fine. Now check if it is possibly a file/folder.
+  if [[ -e "$PATH_TYPO3" ]]; then
+      # If we're forcing, delete the file/folder.
+      if [[ "true" == $FORCE ]]; then
+        consoleWriteLine "Exists as file! Deleted!"
+      else
+        consoleWriteLine "Exists as file! Delete manually or use --force!"
+        exit 1
+      fi
+  fi
   ln --symbolic "$TYPO3_TARGET" "$PATH_TYPO3"
   consoleWriteLine "Created."
 else
