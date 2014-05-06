@@ -567,7 +567,7 @@ fi
 
 # Enable install tool
 consoleWriteVerbose "Enabling install tool..."
-touch "$BASE/typo3conf/FIRST_INSTALL"
+touch "$BASE/typo3conf/ENABLE_INSTALL_TOOL"
 consoleWriteLineVerbose "Done."
 
 # Fix permissions
