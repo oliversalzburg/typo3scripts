@@ -96,7 +96,7 @@ FORCE=false
 # The base directory where TYPO3 should be installed
 BASE=typo3
 # The version to install
-VERSION=6.1.1
+VERSION=6.2.1
 # The hostname of the MySQL server that TYPO3 uses
 HOST=localhost
 # The username used to connect to that MySQL server
@@ -125,7 +125,7 @@ FIX_INDEXPHP=false
 # Where the TYPO3 packages are stored
 STORE=.
 # Which package to install
-PACKAGE=blankpackage
+PACKAGE=typo3_src
 # Script Configuration end
 
 # Pre-initialize the owner to the user that called sudo (if applicable)
