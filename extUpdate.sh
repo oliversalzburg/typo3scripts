@@ -401,9 +401,17 @@ for _extDirectory in "$BASE/typo3conf/ext/"*; do
   _latestVersion=$(cat extVersion.out)
   rm -f extVersion.out
   if [[ "" == $_latestVersion ]]; then
-    consoleWriteLine        "Warning: Could not determine the latest version of extension '$_extKey'!"
-    consoleWriteLineVerbose "         No entry for the extension could be found in the extension cache."
-    continue
+    # Try again with the 6.2 table. This should be the default in due time.
+    _query="SELECT \`version\` FROM \`tx_extensionmanager_domain_model_extension\` WHERE (\`extension_key\` = '$_extKey') ORDER BY \`integer_version\` DESC LIMIT 1;"
+    _errorMessage=$(echo $_query | mysql --host=$HOST --user=$USER --pass=$PASS --database=$DB --batch --skip-column-names 2>&1 > extVersion.out)
+    _status=$?
+    _latestVersion=$(cat extVersion.out)
+    rm -f extVersion.out
+    if [[ "" == $_latestVersion ]]; then
+      consoleWriteLine        "Warning: Could not determine the latest version of extension '$_extKey'!"
+      consoleWriteLineVerbose "         No entry for the extension could be found in the extension cache."
+      continue
+    fi
   fi
   set -e errexit
   if [[ 0 < $_status ]]; then
