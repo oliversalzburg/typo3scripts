@@ -307,7 +307,7 @@ sudo chgrp --recursive $HTTPD_GROUP $BASE $BASE/fileadmin $BASE/typo3temp $BASE/
 consoleWriteLine "Done"
 
 consoleWrite "Changing access permissions for essential TYPO3 folders..."
-sudo chmod --recursive g+rwX,o-w $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads 2> /dev/null || true
+sudo chmod --recursive g+rwX,o-w $BASE $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads 2> /dev/null || true
 consoleWriteLine "Done"
 
 consoleWrite "Fixing access to common files..."
