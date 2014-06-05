@@ -366,12 +366,19 @@ consoleWriteLine "Done."
 INDEX_PHP=$BASE/index.php
 INDEX_TARGET=$SYMLINK/index.php
 consoleWriteVerbose "Checking if index.php needs to be updated..."
-if [[ -h "$INDEX_PHP" ]]; then
+if [[ -f "$INDEX_PHP" ]]; then
   rm -f "$INDEX_PHP"
   cp "$INDEX_TARGET" "$INDEX_PHP"
   consoleWriteLineVerbose "Done."
 else
-  consoleWriteLineVerbose "Skipped."
+  if [[ -h "$INDEX_PHP" ]]; then
+    # If it's already a link, don't do anything.
+    consoleWriteLineVerbose "Skipped."
+  else
+    # If it doesn't exist, create a proper link.
+    ln -s "$INDEX_TARGET" "$INDEX_PHP"
+    consoleWriteLineVerbose "Link created."
+  fi
 fi
 
 # Check important TYPO3 symlinks
