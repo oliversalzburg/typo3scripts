@@ -50,7 +50,7 @@ EOS;
 function exportConfig() {
   $config = "";
   preg_match_all( "/# Script Configuration start.+?# Script Configuration end/ms", file_get_contents( INVNAME ), $config );
-  $_configuration = preg_replace( "/\\$(?P<name>[^=]+)\s*=\s*\"(?P<value>[^\"]*)\";/", "\\1=\\2", $config[ 0 ][ 1 ] );
+  $_configuration = preg_replace( "/\\$(?P<name>[^=]+)\\s*=\\s*\"(?P<value>[^\"]*)\";/", "\\1=\\2", $config[ 0 ][ 1 ] );
   echo $_configuration;
 }
 
