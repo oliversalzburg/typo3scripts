@@ -128,6 +128,7 @@ $UPDATE_BASE = "https://raw.github.com/oliversalzburg/typo3scripts/master";
  * Update check
  */
 function updateCheck() {
+  global $UPDATE_BASE, $SUM_SELF, $SUM_LATEST;
   $_contentVersions = file_get_contents( $UPDATE_BASE . "/versions" );
   $_contentSelf     = split( "\n", file_get_contents( INVNAME ), 2 );
   $_sumSelf         = md5( $_contentSelf[ 1 ] );
@@ -449,7 +450,7 @@ function extractExtensionData( $extensionFile ) {
     }
   
   } else {
-    consoleWriteLine( "Error: Unable to open '$_extensionFile'!" );
+    consoleWriteLine( "Error: Unable to open '$extensionFile'!" );
     exit( 1 );
   }
 }
