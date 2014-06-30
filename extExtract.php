@@ -130,7 +130,7 @@ $UPDATE_BASE = "https://raw.github.com/oliversalzburg/typo3scripts/master";
 function updateCheck() {
   global $UPDATE_BASE, $SUM_SELF, $SUM_LATEST;
   $_contentVersions = file_get_contents( $UPDATE_BASE . "/versions" );
-  $_contentSelf     = split( "\n", file_get_contents( INVNAME ), 2 );
+  $_contentSelf     = explode( "\n", file_get_contents( INVNAME ), 2 );
   $_sumSelf         = md5( $_contentSelf[ 1 ] );
   
   consoleWriteLineVerbose( "Remote hash source: '" . $UPDATE_BASE . "/versions'" );
@@ -166,11 +166,11 @@ function runSelfUpdate() {
     echo "File requested: " . $UPDATE_BASE . "/" . SELF . "\n";
     exit( 1 );
   }
-  $_payload = split( "\n", $_fileContents, 2 );
+  $_payload = explode( "\n", $_fileContents, 2 );
   echo "Done.\n";
   
   // Restore shebang
-  $_selfContent = split( "\n", file_get_contents( INVNAME ), 2 );
+  $_selfContent = explode( "\n", file_get_contents( INVNAME ), 2 );
   $_interpreter = $_selfContent[ 0 ];
   file_put_contents( $_tempFileName, $_interpreter . "\n" );
   file_put_contents( $_tempFileName, $_payload[ 1 ], FILE_APPEND );
