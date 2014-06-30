@@ -494,6 +494,7 @@ function printArray( $array, $indent, $nameIndent ) {
 }
 
 consoleWrite( "Extracting file '$_extensionFile'..." );
+consoleWriteLineVerbose( "" );
 $_extension = extractExtensionData( $_extensionFile );
 
 // Dump data structure first (if requested).
@@ -518,9 +519,16 @@ if( $EXTRACT === "true" ) {
     }
     
     $_fullFileName = $OUTPUTDIR . "/" . $_file[ "name" ];
-    consoleWriteLineVerbose( "Writing file '$_fullFileName'." );
-    if( FALSE === file_put_contents( $_fullFileName, $_file[ "content" ] ) ) {
-      consoleWriteLine( "Error: Failed to write file '$_fullFileName'." );
+    if( "/" == substr( $_fullFileName, -1 ) ) {
+      consoleWriteLineVerbose( "Creating folder '$_fullFileName'." );
+      if( FALSE === mkdir( $_fullFileName ) ) {
+        consoleWriteLine( "Error: Failed to create folder '$_fullFileName'." );
+      }
+    } else {
+      consoleWriteLineVerbose( "Writing file '$_fullFileName'." );
+      if( FALSE === file_put_contents( $_fullFileName, $_file[ "content" ] ) ) {
+        consoleWriteLine( "Error: Failed to write file '$_fullFileName'." );
+      }
     }
   }
   consoleWriteLine( "Done." );
