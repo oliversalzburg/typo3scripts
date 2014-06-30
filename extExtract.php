@@ -493,9 +493,82 @@ function printArray( $array, $indent, $nameIndent ) {
   }
 }
 
+
+function dependencyToString( $dependency, $type  ) {
+  if( !is_array( $dependency ) || !is_array( $dependency[ $type ] ) ) {
+    return "";
+  }
+
+  unset( $dependency[ $type ][ "php" ] );
+  unset( $dependency[ $type ][ "typo3" ] );
+
+  return implode( ",", array_keys( $dependency[ $type ] ) );
+}
+
+function stringToDependency( $dependency ) {
+  $constraint = array();
+  if( is_string( $dependency ) && strlen( $dependency ) ) {
+    $dependency = explode( ",", $dependency );
+    foreach( $dependency as $v ) {
+      $constraint[ $v ] = "";
+    }
+  }
+  return $constraint;
+}
+
+function constructEmConf( array $extensionData ) {
+  $emConf = $extensionData[ "EM_CONF" ];
+  if (
+    !isset( $emConf[ "constraints" ] ) || !isset( $emConf[ "constraints" ][ "depends" ] )
+    || !isset( $emConf[ "constraints" ][ "conflicts" ] ) || !isset( $emConf[ "constraints" ][ "suggests" ] )
+  ) {
+    if( !isset( $emConf[ "constraints" ] ) || !isset( $emConf[ "constraints" ][ "depends" ] ) ) {
+      $emConf[ "constraints" ][ "depends" ] = stringToDependency( $emConf[ "dependencies" ] );
+      if( strlen( $emConf[ "PHP_version" ] ) ) {
+        $emConf[ "constraints" ][ "depends" ][ "php" ] = $emConf[ "PHP_version" ];
+      }
+      if( strlen( $emConf[ "TYPO3_version" ] ) ) {
+        $emConf[ "constraints" ][ "depends" ][ "typo3" ] = $emConf[ "TYPO3_version" ];
+      }
+    }
+    if( !isset( $emConf[ "constraints" ] ) || !isset( $emConf[ "constraints" ][ "conflicts" ] ) ) {
+      $emConf[ "constraints" ][ "conflicts" ] = stringToDependency( $emConf[ "conflicts" ] );
+    }
+    if( !isset( $emConf[ "constraints" ] ) || !isset( $emConf[ "constraints" ][ "suggests" ] ) ) {
+      $emConf[ "constraints" ][ "suggests" ] = array();
+    }
+  } elseif( isset( $emConf[ "constraints" ] ) && isset( $emConf[ "dependencies" ] ) ) {
+    $emConf[ "suggests" ] = isset( $emConf[ "suggests" ] ) ? $emConf[ "suggests" ] : array();
+    $emConf[ "dependencies" ] = dependencyToString( $emConf[ "constraints" ], "depends" );
+    $emConf[ "conflicts" ] = dependencyToString( $emConf[ "constraints" ], "conflicts" );
+  }
+  unset( $emConf[ "private" ] );
+  unset( $emConf[ "download_password" ] );
+  unset( $emConf[ "TYPO3_version" ] );
+  unset( $emConf[ "PHP_version" ] );
+  $emConf = var_export( $emConf, TRUE );
+  $code = "<?php
+
+/***************************************************************
+ * Extension Manager/Repository config file for ext \"" . $extensionData[ "extKey" ] . "\".
+ *
+ * Auto generated " . date( "d-m-Y H:i" ) . "
+ *
+ * Manual updates:
+ * Only the data in the array - everything else is removed by next
+ * writing. \"version\" and \"dependencies\" must not be touched!
+ ***************************************************************/
+
+\$EM_CONF[\$_EXTKEY] = " . $emConf . ";
+
+?>";
+  return str_replace( "  ", "\t", $code );
+}
+
 consoleWrite( "Extracting file '$_extensionFile'..." );
 consoleWriteLineVerbose( "" );
 $_extension = extractExtensionData( $_extensionFile );
+$_emConf = constructEmConf( $_extension );
 
 // Dump data structure first (if requested).
 // $DUMP is a string due to configuration file interoperability concerns
@@ -532,7 +605,14 @@ if( $EXTRACT === "true" ) {
     }
   }
   consoleWriteLine( "Done." );
-  
+
+  $_emConfFilename =  $OUTPUTDIR . "/ext_emconf.php";
+  if( !file_exists( $_emConfFilename ) ) {
+    consoleWrite( "Writing 'ext_emconf.php'..." );
+    file_put_contents( $_emConfFilename, $_emConf );
+    consoleWriteLine( "Done." );
+  }
+
 } else {
   consoleWriteLine( "Skipped." );
 }
