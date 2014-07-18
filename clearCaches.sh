@@ -326,8 +326,8 @@ fi
 if [[ "true" == $CLEAR_TYPO3TEMP ]]; then
   consoleWrite "Clearing typo3temp..."
   # Delete the directory contents
-  rm -rf "$BASE/typo3temp/*"
-  touch "$BASE/typo3temp/index.html"
+  rm -rf $BASE/typo3temp
+  mkdir "$BASE/typo3temp"
   mkdir "$BASE/typo3temp/compressor"
   mkdir "$BASE/typo3temp/cs"
   mkdir "$BASE/typo3temp/Cache"
@@ -336,6 +336,7 @@ if [[ "true" == $CLEAR_TYPO3TEMP ]]; then
   mkdir "$BASE/typo3temp/pics"
   mkdir "$BASE/typo3temp/sprites"
   mkdir "$BASE/typo3temp/temp"
+  touch "$BASE/typo3temp/index.html"
   consoleWriteLine "Done."
 fi
 
