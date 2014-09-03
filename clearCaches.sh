@@ -29,6 +29,7 @@ function showHelp() {
   --all               Clear everything.
   --cache-tables      Truncate cache_* tables.
   --cf-tables         Truncate cf_* tables.
+  --rearlurl-tables   Truncate tx_realurl_*cache tables.
   --typo3temp         Clear typo3temp folder.
 EOF
 }
@@ -84,6 +85,8 @@ BASE=typo3
 CLEAR_CACHE_TABLES=false
 # Truncate cf_* tables.
 CLEAR_CF_TABLES=false
+# Truncate tx_realurl_*cache tables.
+CLEAR_REALURL_TABLES=false
 # Clear typo3temp folder.
 CLEAR_TYPO3TEMP=false
 # Script Configuration end
@@ -251,6 +254,9 @@ for option in $*; do
     --cf-tables)
       CLEAR_CF_TABLES=true
       ;;
+    --realurl-tables)
+      CLEAR_REALURL_TABLES=true
+      ;;
     --typo3temp)
       CLEAR_TYPO3TEMP=true
       ;;
@@ -283,7 +289,7 @@ consoleWriteLine "Succeeded."
 
 # Begin main operation
 
-if [[ "true" == $CLEAR_CACHE_TABLES || "true" == $CLEAR_CF_TABLES ]]; then
+if [[ "true" == $CLEAR_CACHE_TABLES || "true" == $CLEAR_CF_TABLES || "true" == $CLEAR_REALURL_TABLES ]]; then
   consoleWriteVerbose "Getting list of database tables..."
   # Get all table names
   _tablesList=./database.sql.tables
@@ -304,7 +310,7 @@ if [[ "true" == $CLEAR_CACHE_TABLES || "true" == $CLEAR_CF_TABLES ]]; then
   consoleWriteLineVerbose
 
   while read _tableName; do
-    if [[ ( $_tableName = cf_* && "true" == $CLEAR_CF_TABLES ) || ( $_tableName = cache_* && "true" == $CLEAR_CACHE_TABLES ) ]]; then
+    if [[ ( $_tableName = cf_* && "true" == $CLEAR_CF_TABLES ) || ( $_tableName = cache_* && "true" == $CLEAR_CACHE_TABLES ) || ( $_tableName = tx_realurl_*cache && "true" == $CLEAR_REALURL_TABLES ) ]]; then
       consoleWriteVerbose "Truncating $_tableName..."
         set +e errexit
         _errorMessage=$(echo "TRUNCATE TABLE $_tableName;" | mysql --host=$HOST --user=$USER --password=$PASS $DB 2>&1 >/dev/null)
