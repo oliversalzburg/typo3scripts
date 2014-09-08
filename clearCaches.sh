@@ -264,7 +264,7 @@ for option in $*; do
       CLEAR_CACHE_TABLES=true
       CLEAR_CF_TABLES=true
       CLEAR_TYPO3TEMP=true
-	  CLEAR_REALURL_TABLES=true
+      CLEAR_REALURL_TABLES=true
       ;;
     *)
       VERSION=$option
