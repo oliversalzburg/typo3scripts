@@ -327,6 +327,7 @@ if [[ "true" == $CLEAR_CACHE_TABLES || "true" == $CLEAR_CF_TABLES || "true" == $
       consoleWriteLineVerbose "Done."
     fi
   done < $_tablesList
+  rm $_tablesList 2>&1 > /dev/null
   consoleWriteLine "Done."
 fi
 
