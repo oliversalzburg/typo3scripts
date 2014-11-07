@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# TYPO3 Permission Fix Script
+# TYPO3 Clear Caches Script
 # written by Oliver Salzburg
 
 set -o nounset
@@ -22,12 +22,15 @@ function showHelp() {
   --update-check      Checks if a newer version of the script is available.
   --export-config     Prints the default configuration of this script.
   --extract-config    Extracts configuration parameters from TYPO3.
-  --base=PATH         The name of the base path where TYPO3 is 
+  --base=PATH         The name of the base path where TYPO3 is
                       installed. If no base is supplied, "typo3" is used.
 
   Options:
-  --owner=OWNER       The name of the user that owns the installation.
-  --httpd-group=GROUP The user group the local HTTP daemon is running as.
+  --all               Clear everything.
+  --cache-tables      Truncate cache_* tables.
+  --cf-tables         Truncate cf_* tables.
+  --rearlurl-tables   Truncate tx_realurl_*cache tables.
+  --typo3temp         Clear typo3temp folder.
 EOF
 }
 
@@ -78,16 +81,15 @@ QUIET=false
 FORCE=false
 # The base directory where TYPO3 should be installed
 BASE=typo3
-# The owner of the TYPO3 installation
-OWNER=$(id --user --name)
-# The group the local http daemon is running as (usually www-data or apache)
-HTTPD_GROUP=www-data
+# Truncate cache_* tables.
+CLEAR_CACHE_TABLES=false
+# Truncate cf_* tables.
+CLEAR_CF_TABLES=false
+# Truncate tx_realurl_*cache tables.
+CLEAR_REALURL_TABLES=false
+# Clear typo3temp folder.
+CLEAR_TYPO3TEMP=false
 # Script Configuration end
-
-# Pre-initialize the owner to the user that called sudo (if applicable)
-if [[ "$(id -u)" == "0" ]]; then
-  OWNER=$SUDO_USER
-fi
 
 function consoleWrite() {
   [ "false" == "$QUIET" ] && echo -n $* >&2
@@ -115,33 +117,33 @@ function updateCheck() {
     consoleWriteLine "Update checking requires curl. Check skipped."
     return 2
   fi
-  
+
   SUM_LATEST=$(curl $UPDATE_BASE/versions 2>&1 | grep $SELF | awk '{print $2}')
   SUM_SELF=$(tail --lines=+2 "$0" | md5sum | awk '{print $1}')
-  
+
   consoleWriteLineVerbose "Remote hash source: '$UPDATE_BASE/versions'"
   consoleWriteLineVerbose "Own hash: '$SUM_SELF' Remote hash: '$SUM_LATEST'"
-  
+
   if [[ "" == $SUM_LATEST ]]; then
     consoleWriteLine "No update information is available for '$SELF'"
     consoleWriteLine "Please check the project home page 'https://github.com/oliversalzburg/typo3scripts'."
     return 2
-    
+
   elif [[ "$SUM_LATEST" != "$SUM_SELF" ]]; then
     consoleWriteLine "NOTE: New version available!"
     return 1
   fi
-  
+
   return 0
 }
 
 # Self-update
 function runSelfUpdate() {
   echo "Performing self-update..."
-  
+
   _tempFileName="$0.tmp"
   _payloadName="$0.payload"
-  
+
   # Download new version
   echo -n "Downloading latest version..."
   if ! wget --quiet --output-document="$_payloadName" $UPDATE_BASE/$SELF ; then
@@ -150,20 +152,20 @@ function runSelfUpdate() {
     exit 1
   fi
   echo "Done."
-  
+
   # Restore shebang
   _interpreter=$(head --lines=1 "$0")
   echo $_interpreter > "$_tempFileName"
   tail --lines=+2 "$_payloadName" >> "$_tempFileName"
   rm "$_payloadName"
-  
+
   # Copy over modes from old version
   OCTAL_MODE=$(stat -c '%a' $SELF)
   if ! chmod $OCTAL_MODE "$_tempFileName" ; then
     echo "Failed: Error while trying to set mode on $_tempFileName."
     exit 1
   fi
-  
+
   # Spawn update script
   cat > updateScript.sh << EOF
 #!/bin/bash
@@ -176,7 +178,7 @@ else
   echo "Failed!"
 fi
 EOF
-  
+
   echo -n "Inserting update process..."
   exec /bin/bash updateScript.sh
 }
@@ -246,11 +248,23 @@ for option in $*; do
     --base=*)
       BASE=$(echo $option | cut -d'=' -f2)
       ;;
-    --owner=*)
-      OWNER=$(echo $option | cut -d'=' -f2)
+    --cache-tables)
+      CLEAR_CACHE_TABLES=true
       ;;
-    --httpd-group=*)
-      HTTPD_GROUP=$(echo $option | cut -d'=' -f2)
+    --cf-tables)
+      CLEAR_CF_TABLES=true
+      ;;
+    --realurl-tables)
+      CLEAR_REALURL_TABLES=true
+      ;;
+    --typo3temp)
+      CLEAR_TYPO3TEMP=true
+      ;;
+    --all)
+      CLEAR_CACHE_TABLES=true
+      CLEAR_CF_TABLES=true
+      CLEAR_TYPO3TEMP=true
+      CLEAR_REALURL_TABLES=true
       ;;
     *)
       VERSION=$option
@@ -271,54 +285,67 @@ function checkDependency() {
 }
 consoleWrite "Checking dependencies..."
 consoleWriteLineVerbose
-checkDependency chown
-checkDependency chgrp
-checkDependency chmod
+checkDependency mysql
 consoleWriteLine "Succeeded."
 
 # Begin main operation
 
-# Non-existent typo3temp folders are problematic during runtime
-# We want the web user to be able to write IN it, but not create it.
-# So, we're doing it right here
-if [[ ! -d "$BASE/typo3temp" ]]; then
-  consoleWrite "Creating '$BASE/typo3temp'..."
+if [[ "true" == $CLEAR_CACHE_TABLES || "true" == $CLEAR_CF_TABLES || "true" == $CLEAR_REALURL_TABLES ]]; then
+  consoleWriteVerbose "Getting list of database tables..."
+  # Get all table names
+  _tablesList=./database.sql.tables
+  set +e errexit
+  _errorMessage=$(echo "SHOW TABLES;" | mysql --host=$HOST --user=$USER --password=$PASS $DB 2>&1 > $_tablesList)
+  _status=$?
+  set -e errexit
+  if [[ 0 < $_status ]]; then
+    consoleWriteLine "Failed!"
+    consoleWriteLine "Error: $_errorMessage"
+    # Try to delete temporary file
+    rm $_tablesList 2>&1 > /dev/null
+    exit 1
+  fi
+  consoleWriteLineVerbose "Done."
+
+  consoleWrite "Truncating database tables..."
+  consoleWriteLineVerbose
+
+  while read _tableName; do
+    if [[ ( $_tableName = cf_* && "true" == $CLEAR_CF_TABLES ) || ( $_tableName = cache_* && "true" == $CLEAR_CACHE_TABLES ) || ( $_tableName = tx_realurl_*cache && "true" == $CLEAR_REALURL_TABLES ) ]]; then
+      consoleWriteVerbose "Truncating $_tableName..."
+        set +e errexit
+        _errorMessage=$(echo "TRUNCATE TABLE $_tableName;" | mysql --host=$HOST --user=$USER --password=$PASS $DB 2>&1 >/dev/null)
+        _status=$?
+        set -e errexit
+        if [[ 0 < $_status ]]; then
+          consoleWriteLine "Failed!"
+          consoleWriteLine "Error: $_errorMessage"
+          # Try to delete temporary file
+          rm $_tablesList 2>&1 > /dev/null
+          exit 1
+        fi
+      consoleWriteLineVerbose "Done."
+    fi
+  done < $_tablesList
+  rm $_tablesList 2>&1 > /dev/null
+  consoleWriteLine "Done."
+fi
+
+if [[ "true" == $CLEAR_TYPO3TEMP ]]; then
+  consoleWrite "Clearing typo3temp..."
+  # Delete the directory contents
+  rm -rf $BASE/typo3temp
   mkdir "$BASE/typo3temp"
-  consoleWriteLine "Done"
+  mkdir "$BASE/typo3temp/compressor"
+  mkdir "$BASE/typo3temp/cs"
+  mkdir "$BASE/typo3temp/Cache"
+  mkdir "$BASE/typo3temp/GB"
+  mkdir "$BASE/typo3temp/llxml"
+  mkdir "$BASE/typo3temp/pics"
+  mkdir "$BASE/typo3temp/sprites"
+  mkdir "$BASE/typo3temp/temp"
+  touch "$BASE/typo3temp/index.html"
+  consoleWriteLine "Done."
 fi
-# Same goes for the uploads folder
-if [[ ! -d "$BASE/uploads" ]]; then
-  consoleWrite "Creating '$BASE/uploads'..."
-  mkdir "$BASE/uploads"
-  consoleWriteLine "Done"
-fi
-# And for the fileadmin folder
-if [[ ! -d "$BASE/fileadmin" ]]; then
-  consoleWrite "Creating '$BASE/fileadmin'..."
-  mkdir "$BASE/fileadmin"
-  consoleWriteLine "Done"
-fi
-
-consoleWrite "Changing ownership of '$BASE' to '$OWNER'..."
-sudo chown --recursive $OWNER $BASE
-consoleWriteLine "Done"
-
-consoleWrite "Changing owning group of essential TYPO3 folders to '$HTTPD_GROUP'..."
-sudo chgrp --recursive $HTTPD_GROUP $BASE $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads 2> /dev/null || true
-consoleWriteLine "Done"
-
-consoleWrite "Changing access permissions for essential TYPO3 folders..."
-sudo chmod --recursive g+rwX,o-w $BASE $BASE/fileadmin $BASE/typo3temp $BASE/typo3conf $BASE/uploads 2> /dev/null || true
-consoleWriteLine "Done"
-
-consoleWrite "Fixing access to common files..."
-sudo chgrp $HTTPD_GROUP $BASE/.htaccess $BASE/.htpasswd $BASE/favicon.ico 2> /dev/null || true
-sudo chmod g+r $BASE/.htaccess $BASE/.htpasswd $BASE/favicon.ico 2> /dev/null || true
-consoleWriteLine "Done"
-
-consoleWrite "Fixing access to TYPO3 source packages..."
-sudo chgrp --recursive $HTTPD_GROUP $BASE/typo3_src*
-sudo chmod g+rX $BASE/typo3_src*
-consoleWriteLine "Done"
 
 # vim:ts=2:sw=2:expandtab:

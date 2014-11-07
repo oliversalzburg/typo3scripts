@@ -5,7 +5,7 @@
 
 define( "SELF", basename( __FILE__ ) );
 define( "INVNAME", $argv[ 0 ] );
-  
+
 /**
  * Show the help for this script
  * @name string The name of this script as invoked by the user (usually $argv[0])
@@ -132,16 +132,16 @@ function updateCheck() {
   $_contentVersions = file_get_contents( $UPDATE_BASE . "/versions" );
   $_contentSelf     = explode( "\n", file_get_contents( INVNAME ), 2 );
   $_sumSelf         = md5( $_contentSelf[ 1 ] );
-  
+
   consoleWriteLineVerbose( "Remote hash source: '" . $UPDATE_BASE . "/versions'" );
   consoleWriteLineVerbose( "Own hash: '" . $SUM_SELF . "' Remote hash: '" . $SUM_LATEST . "'" );
-  
+
   $_isListed = preg_match( "/^" . SELF . " (?P<sum>[0-9a-zA-Z]{32})/ms", $_contentVersions, $_sumLatest );
   if( !$_isListed ) {
     consoleWriteLine( "No update information is available for '" . SELF . "'." );
     consoleWriteLine( "Please check the project home page https://github.com/oliversalzburg/typo3scripts." );
     return 2;
-    
+
   } else if( $_sumSelf != $_sumLatest[ 1 ] ) {
     consoleWriteLine( "NOTE: New version available!" );
     return 1;
@@ -156,7 +156,7 @@ function runSelfUpdate() {
   echo "Performing self-update...\n";
 
   $_tempFileName = INVNAME . ".tmp";
-  
+
   // Download new version
   echo "Downloading latest version...";
   global $UPDATE_BASE;
@@ -168,20 +168,20 @@ function runSelfUpdate() {
   }
   $_payload = explode( "\n", $_fileContents, 2 );
   echo "Done.\n";
-  
+
   // Restore shebang
   $_selfContent = explode( "\n", file_get_contents( INVNAME ), 2 );
   $_interpreter = $_selfContent[ 0 ];
   file_put_contents( $_tempFileName, $_interpreter . "\n" );
   file_put_contents( $_tempFileName, $_payload[ 1 ], FILE_APPEND );
-  
+
   // Copy over modes from old version
   $_octalMode = fileperms( INVNAME );
   if( FALSE == chmod( $_tempFileName, $_octalMode ) ) {
     echo "Failed: Error while trying to set mode on $_tempFileName.\n";
     exit( 1 );
   }
-  
+
   // Spawn update script
   $_name = INVNAME;
   $_updateScript = <<<EOS
@@ -203,10 +203,10 @@ EOS;
 
   if( function_exists( "pcntl_exec" ) ) {
     pcntl_exec( "/bin/bash", array( "./updateScript.sh" ) );
-    
+
   } else if( function_exists( "passthru" ) ) {
     die( passthru( "./updateScript.sh" ) );
-    
+
   } else {
     die( "Please execute ./updateScript.sh now." );
   }
@@ -255,16 +255,16 @@ foreach( $argv as $_option ) {
 
          if( $_option == "--verbose" ) {
     $VERBOSE = "true";
-    
+
   } else if( $_option == "--quiet" ) {
     $QUIET = "true";
-  
+
   } else if( $_option == "--force" ) {
     $FORCE = "true";
-      
+
   } else if( $_option == "--update" ) {
     runSelfUpdate();
-    
+
   } else if( $_option == "--update-check" ) {
     $returnValue = updateCheck();
     exit( $returnValue );
@@ -282,20 +282,20 @@ foreach( $argv as $_option ) {
 
   } else if( 0 === strpos( $_option, "--extension=" ) ) {
     $EXTENSION = substr( $_option, strpos( $_option, "=" ) + 1 );
-    
+
   } else if( 0 === strpos( $_option, "--force-version=" ) ) {
     $FORCE_VERSION = substr( $_option, strpos( $_option, "=" ) + 1 );
-    
+
   } else if( $_option == "--dump" ) {
     $DUMP    = "true";
     $EXTRACT = "false";
-    
+
   } else if( 0 === strpos( $_option, "--string-limit=" ) ) {
     $STRING_LIMIT = substr( $_option, strpos( $_option, "=" ) + 1 );
-  
+
   } else if( $_option == "--extract" ) {
     $EXTRACT = "true";
-    
+
   } else if( 0 === strpos( $_option, "--output-dir=" ) ) {
     $OUTPUTDIR = substr( $_option, strpos( $_option, "=" ) + 1 );
 
@@ -303,11 +303,11 @@ foreach( $argv as $_option ) {
     $_equalSignIndex = strpos( $_option, "=" );
     if( FALSE === $_equalSignIndex ) {
       $OUTPUTFILE = FALSE;
-      
+
     } else {
       $OUTPUTFILE = substr( $_option, $_equalSignIndex + 1 );
     }
-    
+
   } else {
     $EXTENSION = $_option;
   }
@@ -335,25 +335,25 @@ function downloadExtension( $_extKey, $_version ) {
   $_secondLetter = substr( $_extKey, 1, 1 );
   $_t3xName      = $_extKey . "_" . $_version . ".t3x";
   $_extensionUrl = "http://typo3.org/fileadmin/ter/" . $_firstLetter . "/" . $_secondLetter . "/" . $_t3xName;
-  
+
   $_extensionData = @file_get_contents( $_extensionUrl );
   if( FALSE === $_extensionData ) {
     consoleWriteLine( "Error: Could not retrieve extension file." );
     consoleWriteLine( "File requested: $_extensionUrl" );
     exit( 1 );
   }
-  
+
   $_tempFileName  = $_t3xName;
   global $OUTPUTFILE;
   if( FALSE !== $OUTPUTFILE && "" !== $OUTPUTFILE ) {
     $_tempFileName = $OUTPUTFILE;
   }
-  
+
   file_put_contents( $_tempFileName, $_extensionData );
   if( "" === $OUTPUTFILE ) {
     register_shutdown_function( "cleanUpTempFile", $_tempFileName );
   }
-  
+
   return $_tempFileName;
 }
 
@@ -371,34 +371,34 @@ if( !file_exists( $_extensionFile ) ) {
     // The user wants to get the latest, official extension file for an installed extension
     consoleWrite( "Retrieving original extension file for '$EXTENSION' " );
     $_extensionConfigFile = "$_extensionDirectory/ext_emconf.php";
-    
+
     // While it's not very nice to polute our script with the contents of ext_emconf.php,
     // it's the most reliable way to parse the information.
     $_EXTKEY = $EXTENSION;
     include( $_extensionConfigFile );
     $_extensionConfiguration = $EM_CONF[ $EXTENSION ];
-    
+
     $_installedVersion = $_extensionConfiguration[ "version" ];
     consoleWrite( "$_installedVersion..." );
-    
+
     $_tempFileName = downloadExtension( $EXTENSION, $_installedVersion );
-    
+
     consoleWriteLine( "Done." );
-    
+
     $_extensionFile = $_tempFileName;
-    
+
   } else if( "" != $FORCE_VERSION ) {
     // The user is looking for a specific version of an extension. Retrieve it.
     consoleWrite( "Retrieving original extension file for '$EXTENSION' " );
-    
+
     consoleWrite( "$FORCE_VERSION..." );
-    
+
     $_tempFileName = downloadExtension( $EXTENSION, $FORCE_VERSION );
-    
+
     consoleWriteLine( "Done." );
-    
+
     $_extensionFile = $_tempFileName;
-    
+
   } else {
     consoleWriteLine( "Unable to find extension '$EXTENSION'." );
     consoleWriteLine( "Directory requested: '$BASE/typo3conf/ext/$EXTENSION'" );
@@ -428,7 +428,7 @@ function extractExtensionData( $extensionFile ) {
     if( "gzcompress" == $_fileParts[ 1 ] ) {
       if( function_exists( "gzuncompress" ) ) {
         $_extensionContent = gzuncompress( $_fileParts[ 2 ] );
-  
+
       } else {
         consoleWriteLine( "Error: Unable to decode extension. gzuncompress() is unavailable." );
         exit( 1 );
@@ -439,7 +439,7 @@ function extractExtensionData( $extensionFile ) {
       $_extension = unserialize( $_extensionContent );
       if( is_array( $_extension ) ) {
         return $_extension;
-        
+
       } else {
         consoleWriteLine( "Error: Unable to unserialize extension! (Shouldn't happen)" );
         exit( 1 );
@@ -448,7 +448,7 @@ function extractExtensionData( $extensionFile ) {
       consoleWriteLine( "Error: MD5 mismatch. Extension file may be corrupt!" );
       exit( 1 );
     }
-  
+
   } else {
     consoleWriteLine( "Error: Unable to open '$extensionFile'!" );
     exit( 1 );
@@ -481,11 +481,11 @@ function printArray( $array, $indent, $nameIndent ) {
       // $STRING_LIMIT is a string due to configuration file interoperability concerns
       if( !ctype_print( $value ) || ( intval( $STRING_LIMIT ) > 0 && $_valueLength > intval( $STRING_LIMIT ) ) ) {
         echo "String[$_valueLength]";
-        
+
       } else {
         echo $value;
       }
-      
+
     } else {
       echo gettype( $value );
     }
@@ -493,9 +493,82 @@ function printArray( $array, $indent, $nameIndent ) {
   }
 }
 
+
+function dependencyToString( $dependency, $type  ) {
+  if( !is_array( $dependency ) || !is_array( $dependency[ $type ] ) ) {
+    return "";
+  }
+
+  unset( $dependency[ $type ][ "php" ] );
+  unset( $dependency[ $type ][ "typo3" ] );
+
+  return implode( ",", array_keys( $dependency[ $type ] ) );
+}
+
+function stringToDependency( $dependency ) {
+  $constraint = array();
+  if( is_string( $dependency ) && strlen( $dependency ) ) {
+    $dependency = explode( ",", $dependency );
+    foreach( $dependency as $v ) {
+      $constraint[ $v ] = "";
+    }
+  }
+  return $constraint;
+}
+
+function constructEmConf( array $extensionData ) {
+  $emConf = $extensionData[ "EM_CONF" ];
+  if (
+    !isset( $emConf[ "constraints" ] ) || !isset( $emConf[ "constraints" ][ "depends" ] )
+    || !isset( $emConf[ "constraints" ][ "conflicts" ] ) || !isset( $emConf[ "constraints" ][ "suggests" ] )
+  ) {
+    if( !isset( $emConf[ "constraints" ] ) || !isset( $emConf[ "constraints" ][ "depends" ] ) ) {
+      $emConf[ "constraints" ][ "depends" ] = stringToDependency( $emConf[ "dependencies" ] );
+      if( strlen( $emConf[ "PHP_version" ] ) ) {
+        $emConf[ "constraints" ][ "depends" ][ "php" ] = $emConf[ "PHP_version" ];
+      }
+      if( strlen( $emConf[ "TYPO3_version" ] ) ) {
+        $emConf[ "constraints" ][ "depends" ][ "typo3" ] = $emConf[ "TYPO3_version" ];
+      }
+    }
+    if( !isset( $emConf[ "constraints" ] ) || !isset( $emConf[ "constraints" ][ "conflicts" ] ) ) {
+      $emConf[ "constraints" ][ "conflicts" ] = stringToDependency( $emConf[ "conflicts" ] );
+    }
+    if( !isset( $emConf[ "constraints" ] ) || !isset( $emConf[ "constraints" ][ "suggests" ] ) ) {
+      $emConf[ "constraints" ][ "suggests" ] = array();
+    }
+  } elseif( isset( $emConf[ "constraints" ] ) && isset( $emConf[ "dependencies" ] ) ) {
+    $emConf[ "suggests" ] = isset( $emConf[ "suggests" ] ) ? $emConf[ "suggests" ] : array();
+    $emConf[ "dependencies" ] = dependencyToString( $emConf[ "constraints" ], "depends" );
+    $emConf[ "conflicts" ] = dependencyToString( $emConf[ "constraints" ], "conflicts" );
+  }
+  unset( $emConf[ "private" ] );
+  unset( $emConf[ "download_password" ] );
+  unset( $emConf[ "TYPO3_version" ] );
+  unset( $emConf[ "PHP_version" ] );
+  $emConf = var_export( $emConf, TRUE );
+  $code = "<?php
+
+/***************************************************************
+ * Extension Manager/Repository config file for ext \"" . $extensionData[ "extKey" ] . "\".
+ *
+ * Auto generated " . date( "d-m-Y H:i" ) . "
+ *
+ * Manual updates:
+ * Only the data in the array - everything else is removed by next
+ * writing. \"version\" and \"dependencies\" must not be touched!
+ ***************************************************************/
+
+\$EM_CONF[\$_EXTKEY] = " . $emConf . ";
+
+?>";
+  return str_replace( "  ", "\t", $code );
+}
+
 consoleWrite( "Extracting file '$_extensionFile'..." );
 consoleWriteLineVerbose( "" );
 $_extension = extractExtensionData( $_extensionFile );
+$_emConf = constructEmConf( $_extension );
 
 // Dump data structure first (if requested).
 // $DUMP is a string due to configuration file interoperability concerns
@@ -509,7 +582,7 @@ if( $EXTRACT === "true" ) {
   // Extract contents
   foreach( $_extension[ "FILES" ] as $_filename => $_file ) {
     $_directoryName = dirname( $_file[ "name" ] );
-  
+
     $_fullPathName = $OUTPUTDIR . "/" . $_directoryName;
     // is_dir() and mkdir() seem highly unreliable in their return values,
     // so we must ignore failures on mkdir() and have to catch issues later.
@@ -517,7 +590,7 @@ if( $EXTRACT === "true" ) {
       consoleWriteLineVerbose( "Creating directory '$_fullPathName'." );
       @mkdir( $_fullPathName, 0700, true );
     }
-    
+
     $_fullFileName = $OUTPUTDIR . "/" . $_file[ "name" ];
     if( "/" == substr( $_fullFileName, -1 ) ) {
       consoleWriteLineVerbose( "Creating folder '$_fullFileName'." );
@@ -532,7 +605,14 @@ if( $EXTRACT === "true" ) {
     }
   }
   consoleWriteLine( "Done." );
-  
+
+  $_emConfFilename =  $OUTPUTDIR . "/ext_emconf.php";
+  if( !file_exists( $_emConfFilename ) ) {
+    consoleWrite( "Writing 'ext_emconf.php'..." );
+    file_put_contents( $_emConfFilename, $_emConf );
+    consoleWriteLine( "Done." );
+  }
+
 } else {
   consoleWriteLine( "Skipped." );
 }
