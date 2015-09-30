@@ -1,7 +1,7 @@
 configurationProxy.php 7679c4a1786eaa7ceb77af32fdcd9386
 extExtract.php 781977333a8f4119e96abfd1ddc20815
 bootstrap.sh e58e01f5cb6b56f2b6aeabec7f96bfb2
-clearCaches.sh 62367d65ecae05aa50beef1fc4830252
+clearCaches.sh 56058265a65f5a92fcf76dabf520bc50
 createBackup.sh ed9089cd0d16580591f64ce010f8ed1c
 extChangelog.sh db8bb5473f97cfd8121b3a841cf0c65e
 extUpdate.sh 89a1b082ddf7b8f206cb88a4baffcdb4
