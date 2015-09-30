@@ -311,7 +311,7 @@ if [[ "true" == $CLEAR_CACHE_TABLES || "true" == $CLEAR_CF_TABLES || "true" == $
   consoleWriteLineVerbose
 
   while read _tableName; do
-    if [[ ( $_tableName = cf_* && "true" == $CLEAR_CF_TABLES ) || ( $_tableName = cache_* && "true" == $CLEAR_CACHE_TABLES ) || ( $_tableName = tx_realurl_*cache && "true" == $CLEAR_REALURL_TABLES ) ]]; then
+    if [[ ( $_tableName = cf_* && "true" == $CLEAR_CF_TABLES ) || ( $_tableName = cache_* && "true" == $CLEAR_CACHE_TABLES ) || ( $_tableName = tx_realurl_*cache && "true" == $CLEAR_REALURL_TABLES ) || ( $_tableName = tx_realurl_uniqalias && "true" == $CLEAR_REALURL_TABLES ) ]]; then
       consoleWriteVerbose "Truncating $_tableName..."
         set +e errexit
         _errorMessage=$(echo "TRUNCATE TABLE $_tableName;" | mysql --host=$HOST --user=$USER --password=$PASS $DB 2>&1 >/dev/null)
