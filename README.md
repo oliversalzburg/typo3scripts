@@ -105,5 +105,3 @@ In the latest development builds, you're able to restore a backup made on a diff
     Importing database dump...Done.
 
 You may have to utilize [fixPermissions.sh](wiki/FixPermissionsSh) afterwards to adjust permissions for your webserver user. You'll also have to adjust your database settings and domain records in the cloned TYPO3 instance afterwards.
-
-[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/156b23cfb21d460d03e48fd240a6499c "githalytics.com")](http://githalytics.com/oliversalzburg/typo3scripts)
