@@ -1,3 +1,8 @@
+> [!CAUTION]
+> While these scripts were a lot of help, and a lot of fun to work on, while I was using TYPO3 10 years ago, I would no longer accept any changes to this repository. Thus, it has been **archived as of 2024-07-29**. I _hope_ that none of these scripts are necessary anymore in today's development of TYPO3 instances. In case they are, then the state they have been in over the past 10 years is probably good until the end of time :smile:
+
+---
+
 This is a collection of shell scripts that aid in TYPO3 deployment and maintenance.
 
 The scripts in this project and their primary intended purpose are outlined as such:
